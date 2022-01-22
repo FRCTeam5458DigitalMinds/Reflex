@@ -11,7 +11,7 @@
 #include <ctre/Phoenix.h>
 #include <frc/Timer.h>
 #include <frc/TimedRobot.h>
-//#include <PowerDistribution.h>
+#include <frc/PowerDistribution.h>
 #include <frc/Joystick.h>
 #include <frc/ADXRS450_Gyro.h>
 #include <frc/Solenoid.h>
@@ -34,7 +34,7 @@ TalonFX MiddleRightMotor {4};
 TalonFX BackRightMotor {5};
 
 //Power Distribution Panel
-
+//frc::PowerDistribution::PowerDistribution();
 
 //Set up motors to drive
 void LeftMotorDrive (double speed) {
@@ -67,21 +67,7 @@ void Robot::RobotInit() {
  * <p> This runs after the mode specific periodic functions, but before
  * LiveWindow and SmartDashboard integrated updating.
  */
-void Robot::RobotPeriodic() {
-  double JoyY = Joystick.GetRawAxis();
-  
-  //If joystick is pushed forward
-  if (JoyY > 0.1) {
-    LeftMotorDrive(JoyY);
-    RightMotorDrive(JoyY);
-  }
-  if (JoyY < -0.1){
-    LeftMotorDrive(-JoyY);
-    RightMotorDrive(-JoyY);
-  }
-
-
-}
+void Robot::RobotPeriodic() {}
 
 /**
  * This autonomous (alon)g with the chooser code above) shows how to select
@@ -117,7 +103,24 @@ void Robot::AutonomousPeriodic() {
 
 void Robot::TeleopInit() {}
 
-void Robot::TeleopPeriodic() {}
+
+void Robot::TeleopPeriodic() {
+
+double JoyY = Joystick.GetY();
+  
+  //If joystick is pushed forward
+  if (JoyY > 0.1) {
+    LeftMotorDrive(JoyY);
+    RightMotorDrive(JoyY);
+  }
+  if (JoyY < -0.1){
+    LeftMotorDrive(-JoyY);
+    RightMotorDrive(-JoyY);
+  }
+
+
+
+}
 
 void Robot::DisabledInit() {}
 
