@@ -15,17 +15,17 @@
 #include <frc/Joystick.h>
 #include <frc/ADXRS450_Gyro.h>
 #include <frc/Solenoid.h>
-// :^)   :|
+
 
 //Declarations
 
 //Variables
 
 //Joysticks
-frc::Joystick Joystick, Wheel, Xbox;
+frc::Joystick JoyStick1(0), Wheel(1), Xbox(2);
 
 
-//Motors
+//Drive Motors
 TalonFX FrontLeftMotor {0};
 TalonFX MiddleLeftMotor {1};
 TalonFX BackLeftMotor {2};
@@ -33,8 +33,22 @@ TalonFX FrontRightMotor {3};
 TalonFX MiddleRightMotor {4};
 TalonFX BackRightMotor {5};
 
+
+//Intake Motors
+TalonFX LeftIntakeMotor {6};
+TalonFX RightIntakeMotor {7};
+
+//Shooter Motors
+TalonFX LeftShooterMotor {12}
+TalonFx RightShooterMotor {69}
+
+//Climb Motors
+TalonFX FirstClimbMotor {10};
+TalonFX SecondClimbMotor {11};
+TalonFX ThirdClimbMotor {13};
+
 //Power Distribution Panel
-//frc::PowerDistribution::PowerDistribution();
+frc::PowerDistribution::PowerDistribution(0);
 
 //Set up motors to drive
 void LeftMotorDrive (double speed) {
@@ -47,8 +61,20 @@ void RightMotorDrive (double speed) {
   MiddleRightMotor.Set(ControlMode::PercentOutput, speed);
   BackRightMotor.Set(ControlMode::PercentOutput, speed);
 }
+void Intake (double speed) {
+  LeftIntakeMotor.Set(ControlMode::PercentOutput, speed);
+  RightIntakeMotor.Set(ControlMode::PercentOutput, speed);
+}
+void Shooter (double speed) {
+  LeftShooterMotor.Set(ControlMode::PercentOutput, speed);
+  RightShooterMotor.Set(ControlMode::PercentOutput, speed);
+}
+void Climb (double speed) {
+  FirstClimbMotor.Set(ControlMode::PercentOutput, speed);
+  SecondClimbMotor.Set(ControlMode::PercentOutput, speed);
+  ThirdClimbMotor.Set(ControlMode::PercentOutput, speed);
+}
 
-// :D    :]
 
 //Initializing robot & variables
 void Robot::RobotInit() {
@@ -103,24 +129,63 @@ void Robot::AutonomousPeriodic() {
 
 void Robot::TeleopInit() {}
 
-
+b
 void Robot::TeleopPeriodic() {
 
-double JoyY = Joystick.GetY();
-  
+double JoyY = JoyStick1.GetY();
+double WheelX = Wheel.GetX();
+
   //If joystick is pushed forward
   if (JoyY > 0.1) {
     LeftMotorDrive(JoyY);
     RightMotorDrive(JoyY);
   }
-  if (JoyY < -0.1){
+  if (JoyY < -0.1) {
     LeftMotorDrive(-JoyY);
     RightMotorDrive(-JoyY);
   }
 
+  //Point turning (turning in place)
+  if (Wheel.GetRawButton(0)) {
+    LeftMotorDrive(0);
+    RightMotorDrive(WheelX);
+  }
+  if (Wheel.GetRawButton(0))  {
+    LeftMotorDrive(WheelX);
+    RightMotorDrive(0);
+  }
+
+  //Regular turning while driving
+  if (WheelX > 0 && JoyY > 0 || JoyY < 0) {
+    LeftMotorDrive(JoyY - WheelX);
+    RightMotorDrive(JoyY + WheelX);
+  }
+  else if (WheelX < 0 && (JoyY > 0 || JoyY < 0)) {
+    RightMotorDrive (JoyY - WheelX);
+    LeftMotorDrive (JoyY + WheelX);
+  }
+  else {
+    LeftMotorDrive(0);
+    RightMotorDrive(0);
+  }
 
 
-}
+
+  //Intake Code (button # is subject to change)
+  if(Xbox.GetRawButton(1)) {
+    Intake(0.2);
+  }
+
+  //Shooter Code
+  if(Xbox.GetRawButton(2)) {
+    Shooter(0.2);
+  }
+
+  //Climb Code
+  if(Xbox.GetRawBotton(3)) {
+    Climb (0.2);
+  }
+} 
 
 void Robot::DisabledInit() {}
 
