@@ -15,6 +15,7 @@
 #include <frc/Joystick.h>
 #include <frc/ADXRS450_Gyro.h>
 #include <frc/Solenoid.h>
+#include <WPILibVersion.h>
 
 
 //Declarations
@@ -39,8 +40,8 @@ TalonFX LeftIntakeMotor {6};
 TalonFX RightIntakeMotor {7};
 
 //Shooter Motors
-TalonFX LeftShooterMotor {12}
-TalonFx RightShooterMotor {69}
+TalonFX LeftShooterMotor {12};
+TalonFX RightShooterMotor {69};
 
 //Climb Motors
 TalonFX FirstClimbMotor {10};
@@ -48,7 +49,7 @@ TalonFX SecondClimbMotor {11};
 TalonFX ThirdClimbMotor {13};
 
 //Power Distribution Panel
-frc::PowerDistribution::PowerDistribution(0);
+//frc::PowerDistribution::PowerDistribution();
 
 //Set up motors to drive
 void LeftMotorDrive (double speed) {
@@ -129,7 +130,6 @@ void Robot::AutonomousPeriodic() {
 
 void Robot::TeleopInit() {}
 
-b
 void Robot::TeleopPeriodic() {
 
 double JoyY = JoyStick1.GetY();
@@ -182,7 +182,7 @@ double WheelX = Wheel.GetX();
   }
 
   //Climb Code
-  if(Xbox.GetRawBotton(3)) {
+  if(Xbox.GetRawButton(3)) {
     Climb (0.2);
   }
 } 
