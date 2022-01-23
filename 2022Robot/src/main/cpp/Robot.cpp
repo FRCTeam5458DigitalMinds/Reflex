@@ -53,9 +53,10 @@ TalonFX ThirdClimbMotor {13};
 
 //Set up motors to drive
 void LeftMotorDrive (double speed) {
-  FrontLeftMotor.Set(ControlMode::PercentOutput, speed);
-  MiddleLeftMotor.Set(ControlMode::PercentOutput, speed);
-  BackLeftMotor.Set(ControlMode::PercentOutput, speed);
+  //negative speed because left motors are reversed
+  FrontLeftMotor.Set(ControlMode::PercentOutput, -speed);
+  MiddleLeftMotor.Set(ControlMode::PercentOutput, -speed);
+  BackLeftMotor.Set(ControlMode::PercentOutput, -speed);
 }
 void RightMotorDrive (double speed) { 
   FrontRightMotor.Set(ControlMode::PercentOutput, speed);
@@ -146,17 +147,19 @@ double WheelX = Wheel.GetX();
   }
 
   //Point turning (turning in place)
-  if (Wheel.GetRawButton(0)) {
-    LeftMotorDrive(0);
-    RightMotorDrive(WheelX);
-  }
-  if (Wheel.GetRawButton(0))  {
-    LeftMotorDrive(WheelX);
-    RightMotorDrive(0);
+  if (Wheel.GetRawButton(5)) {
+    if (WheelX > 0) {
+      LeftMotorDrive(WheelX);
+      RightMotorDrive(-WheelX);
+    }
+    else if (WheelX < 0) {
+      LeftMotorDrive(-WheelX);
+      RightMotorDrive(WheelX);
+    }
   }
 
   //Regular turning while driving
-  if (WheelX > 0 && JoyY > 0 || JoyY < 0) {
+  if (WheelX > 0 && (JoyY > 0 || JoyY < 0)) {
     LeftMotorDrive(JoyY - WheelX);
     RightMotorDrive(JoyY + WheelX);
   }
