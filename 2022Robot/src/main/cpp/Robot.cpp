@@ -20,19 +20,18 @@
 
 //Declarations
 
-//Variables
-
 //Joysticks
-frc::Joystick JoyStick1(0), Wheel(1), Xbox(2);
+frc::Joystick JoyStick1(0), Wheel(2), Xbox(1);
 
 
 //Drive Motors
-TalonFX FrontLeftMotor {0};
-TalonFX MiddleLeftMotor {1};
-TalonFX BackLeftMotor {2};
-TalonFX FrontRightMotor {3};
-TalonFX MiddleRightMotor {4};
-TalonFX BackRightMotor {5};
+TalonFX FrontLeftMotor {15};
+TalonFX MiddleLeftMotor {14};
+TalonFX BackLeftMotor {13};
+
+TalonFX FrontRightMotor {1};
+TalonFX MiddleRightMotor {2};
+TalonFX BackRightMotor {3};
 
 
 //Intake Motors
@@ -51,12 +50,23 @@ TalonFX ThirdClimbMotor {13};
 //Power Distribution Panel
 //frc::PowerDistribution::PowerDistribution();
 
+float turnFact = 0.9;
+
+//Gyro
+frc::ADXRS450_Gyro gyro;
+
+//Variables
+bool isStartingAngleSet;
+
+//PID (Proportional, Integral, Derivative) to calculate error and overshoot and correct it
+//double P, I, D, error, setpoint, rcw;
+
 //Set up motors to drive
 void LeftMotorDrive (double speed) {
   //negative speed because left motors are reversed
-  FrontLeftMotor.Set(ControlMode::PercentOutput, -speed);
-  MiddleLeftMotor.Set(ControlMode::PercentOutput, -speed);
-  BackLeftMotor.Set(ControlMode::PercentOutput, -speed);
+  FrontLeftMotor.Set(ControlMode::PercentOutput, speed);
+  MiddleLeftMotor.Set(ControlMode::PercentOutput, speed);
+  BackLeftMotor.Set(ControlMode::PercentOutput, speed);
 }
 void RightMotorDrive (double speed) { 
   FrontRightMotor.Set(ControlMode::PercentOutput, speed);
@@ -76,7 +86,15 @@ void Climb (double speed) {
   SecondClimbMotor.Set(ControlMode::PercentOutput, speed);
   ThirdClimbMotor.Set(ControlMode::PercentOutput, speed);
 }
-
+/*void setSetpoint(int setpoint) {
+  this.setpoint = setpoint;
+}
+void PID() {
+  error = setpoint - gyro.getAngle() // Error = Target - Actual
+  this.integral += (error*.02) // Integral is increased by the error*time (which is .02 seconds using normal IterativeRobot)
+  derivative = (error - this.previous_error) / .02
+  rcw = P*error + I*self.integral + D*derivative
+}*/
 
 //Initializing robot & variables
 void Robot::RobotInit() {
@@ -84,7 +102,9 @@ void Robot::RobotInit() {
   m_chooser.AddOption(kAutoNameCustom, kAutoNameCustom);
   frc::SmartDashboard::PutData("Auto Modes", &m_chooser);
 
-
+  FrontLeftMotor.SetInverted(true);
+  MiddleLeftMotor.SetInverted(true);
+  BackLeftMotor.SetInverted(true);
 }
 
 /**
@@ -133,39 +153,28 @@ void Robot::TeleopInit() {}
 
 void Robot::TeleopPeriodic() {
 
-double JoyY = JoyStick1.GetY();
+double JoyY = -JoyStick1.GetY();
 double WheelX = Wheel.GetX();
 
-  //If joystick is pushed forward
-  if (JoyY > 0.1) {
-    LeftMotorDrive(JoyY);
-    RightMotorDrive(JoyY);
+  //If joystick is pushed forward or backward
+  if (JoyY > 0.1 || JoyY < -0.1) {
+    LeftMotorDrive(JoyY/2);
+    RightMotorDrive(JoyY/2);
   }
-  if (JoyY < -0.1) {
-    LeftMotorDrive(-JoyY);
-    RightMotorDrive(-JoyY);
-  }
-
   //Point turning (turning in place)
-  if (Wheel.GetRawButton(5)) {
+  else if (Wheel.GetRawButton(5)) {
     if (WheelX > 0) {
-      LeftMotorDrive(WheelX);
-      RightMotorDrive(-WheelX);
+      LeftMotorDrive(WheelX * WheelX);
+      RightMotorDrive(-(WheelX * WheelX));
+    } else if (WheelX < 0) {
+      LeftMotorDrive(-(WheelX * WheelX));
+      RightMotorDrive(WheelX * WheelX);
     }
-    else if (WheelX < 0) {
-      LeftMotorDrive(-WheelX);
-      RightMotorDrive(WheelX);
-    }
-  }
-
+  } 
   //Regular turning while driving
-  if (WheelX > 0 && (JoyY > 0 || JoyY < 0)) {
-    LeftMotorDrive(JoyY - WheelX);
-    RightMotorDrive(JoyY + WheelX);
-  }
-  else if (WheelX < 0 && (JoyY > 0 || JoyY < 0)) {
-    RightMotorDrive (JoyY - WheelX);
-    LeftMotorDrive (JoyY + WheelX);
+  else if ((WheelX > 0 || WheelX < 0) && (JoyY > 0.05 || JoyY < -0.05)) {
+    LeftMotorDrive((JoyY/2) + (turnFact * WheelX));
+    RightMotorDrive((JoyY/2) - (turnFact * WheelX));
   }
   else {
     LeftMotorDrive(0);
@@ -173,8 +182,7 @@ double WheelX = Wheel.GetX();
   }
 
 
-
-  //Intake Code (button # is subject to change)
+  /*Intake Code (button # is subject to change)
   if(Xbox.GetRawButton(1)) {
     Intake(0.2);
   }
@@ -187,7 +195,11 @@ double WheelX = Wheel.GetX();
   //Climb Code
   if(Xbox.GetRawButton(3)) {
     Climb (0.2);
-  }
+  }*/
+
+  frc::SmartDashboard::PutNumber("JoyStick Value", JoyY);
+  frc::SmartDashboard::PutNumber("LeftMotorValue", FrontLeftMotor.GetMotorOutputPercent());
+  frc::SmartDashboard::PutNumber("RightMotorValue", FrontRightMotor.GetMotorOutputPercent());
 } 
 
 void Robot::DisabledInit() {}
