@@ -156,8 +156,16 @@ void Robot::TeleopPeriodic() {
 double JoyY = -JoyStick1.GetY();
 double WheelX = Wheel.GetX();
 
+  if (WheelX > 0 && (JoyY > 0.05 || JoyY < -0.05)) {
+    LeftMotorDrive((turnFact * WheelX));
+    RightMotorDrive(-(turnFact * WheelX));
+  }
+  else if (WheelX < 0 && (JoyY > 0.05 || JoyY < -0.05)) {
+    LeftMotorDrive(-(turnFact * WheelX));
+    RightMotorDrive((turnFact * WheelX));
+  }
   //If joystick is pushed forward or backward
-  if (JoyY > 0.1 || JoyY < -0.1) {
+  else if (JoyY > 0.1 || JoyY < -0.1) {
     LeftMotorDrive(JoyY/2);
     RightMotorDrive(JoyY/2);
   }
@@ -172,10 +180,6 @@ double WheelX = Wheel.GetX();
     }
   } 
   //Regular turning while driving
-  else if ((WheelX > 0 || WheelX < 0) && (JoyY > 0.05 || JoyY < -0.05)) {
-    LeftMotorDrive((JoyY/2) + (turnFact * WheelX));
-    RightMotorDrive((JoyY/2) - (turnFact * WheelX));
-  }
   else {
     LeftMotorDrive(0);
     RightMotorDrive(0);
@@ -200,6 +204,7 @@ double WheelX = Wheel.GetX();
   frc::SmartDashboard::PutNumber("JoyStick Value", JoyY);
   frc::SmartDashboard::PutNumber("LeftMotorValue", FrontLeftMotor.GetMotorOutputPercent());
   frc::SmartDashboard::PutNumber("RightMotorValue", FrontRightMotor.GetMotorOutputPercent());
+  frc::SmartDashboard::PutNumber("TurnValue", WheelX);
 } 
 
 void Robot::DisabledInit() {}
