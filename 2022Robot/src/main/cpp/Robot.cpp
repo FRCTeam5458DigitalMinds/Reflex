@@ -156,11 +156,11 @@ void Robot::TeleopPeriodic() {
 double JoyY = -JoyStick1.GetY();
 double WheelX = Wheel.GetX();
 
-  if (WheelX > 0 && (JoyY > 0.05 || JoyY < -0.05)) {
+  if (WheelX > 0.05 && (JoyY > 0.05 || JoyY < -0.05)) {
     LeftMotorDrive((turnFact * WheelX));
     RightMotorDrive(-(turnFact * WheelX));
   }
-  else if (WheelX < 0 && (JoyY > 0.05 || JoyY < -0.05)) {
+  else if (WheelX < -0.05 && (JoyY > 0.05 || JoyY < -0.05)) {
     LeftMotorDrive(-(turnFact * WheelX));
     RightMotorDrive((turnFact * WheelX));
   }
