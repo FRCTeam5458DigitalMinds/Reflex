@@ -1,3 +1,4 @@
+
 // Copyright (c) FIRST and other WPILib contributors.
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
@@ -143,7 +144,22 @@ void Robot::AutonomousInit() {
 
 void Robot::AutonomousPeriodic() {
   if (m_autoSelected == kAutoNameCustom) {
-    // Custom Auto goes here
+    // Auto #1 (we need to figure out how to use falcon encoder)
+    // Step #1 - Shoot cargo (code for that will be written here)
+    if(FrontLeftMotor.getSelectedFeedbackSensor() < 76.17 && FrontRightMotor.getSelectedFeedbackSensor() < 76.17) {
+      LeftMotorDrive(0.2);
+      RightMotorDrive(0.2);
+    }
+
+
+    // Auto #2
+    
+
+
+    // Auto #3
+
+
+    
   } else {
     // Default Auto goes here
   }
@@ -157,12 +173,12 @@ double JoyY = -JoyStick1.GetY();
 double WheelX = Wheel.GetX();
 
   if (WheelX > 0.05 && (JoyY > 0.05 || JoyY < -0.05)) {
-    LeftMotorDrive((turnFact * WheelX));
-    RightMotorDrive(-(turnFact * WheelX));
-  }
-  else if (WheelX < -0.05 && (JoyY > 0.05 || JoyY < -0.05)) {
     LeftMotorDrive(-(turnFact * WheelX));
     RightMotorDrive((turnFact * WheelX));
+  }
+  else if (WheelX < -0.05 && (JoyY > 0.05 || JoyY < -0.05)) {
+    LeftMotorDrive((turnFact * WheelX));
+    RightMotorDrive(-(turnFact * WheelX));
   }
   //If joystick is pushed forward or backward
   else if (JoyY > 0.1 || JoyY < -0.1) {
@@ -172,11 +188,11 @@ double WheelX = Wheel.GetX();
   //Point turning (turning in place)
   else if (Wheel.GetRawButton(5)) {
     if (WheelX > 0) {
-      LeftMotorDrive(WheelX * WheelX);
-      RightMotorDrive(-(WheelX * WheelX));
-    } else if (WheelX < 0) {
       LeftMotorDrive(-(WheelX * WheelX));
-      RightMotorDrive(WheelX * WheelX);
+      RightMotorDrive((WheelX * WheelX));
+    } else if (WheelX < 0) {
+      LeftMotorDrive((WheelX * WheelX));
+      RightMotorDrive(-(WheelX * WheelX));
     }
   } 
   //Regular turning while driving
