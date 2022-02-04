@@ -144,19 +144,34 @@ void Robot::AutonomousInit() {
 
 void Robot::AutonomousPeriodic() {
   if (m_autoSelected == kAutoNameCustom) {
-    // Auto #1 (we need to figure out how to use falcon encoder)
-    // Step #1 - Shoot cargo (code for that will be written here)
-    if(FrontLeftMotor.getSelectedFeedbackSensor() < 76.17 && FrontRightMotor.getSelectedFeedbackSensor() < 76.17) {
+    if (FrontLeftMotor.GetSelectedSensorPosition() < 12 && FrontRightMotor.GetSelectedSensorPosition() < 12) {
       LeftMotorDrive(0.2);
       RightMotorDrive(0.2);
     }
-
-
-    // Auto #2
+    
+    
+    // Auto 1 - Same for all tarmacs
+    // Step #1 - Shoot cargo (code for that will be written here)
+    /*if(FrontLeftMotor.GetSelectedSensorPosition() < 76.17 && FrontRightMotor.GetSelectedSensorPosition() < 76.17) {
+      LeftMotorDrive(0.2);
+      RightMotorDrive(0.2);
+      Intake(0.2);
+      
+    }
+    if(FrontLeftMotor.GetSelectedSensorPosition() >0 && FrontRightMotor.GetSelectedSensorPosition() >0) {
+      LeftMotorDrive(-0.2);
+      RightMotorDrive(-0.2);
+    }*/
+    //Shooter Code Goes Here...
+    
+    // Auto #2 - Blue Bottom & Red Top
     
 
+    // Auto #2 - Blue Top & Red Bottom
+    
+    
 
-    // Auto #3
+    // Auto #3 (wait to do this one)
 
 
     
