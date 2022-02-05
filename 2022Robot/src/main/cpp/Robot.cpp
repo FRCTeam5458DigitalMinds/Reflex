@@ -140,47 +140,68 @@ void Robot::AutonomousInit() {
   } else {
     // Default Auto goes here
   }
+  FrontLeftMotor.SetSelectedSensorPosition(0);
+  
 }
 
 void Robot::AutonomousPeriodic() {
   if (m_autoSelected == kAutoNameCustom) {
-    if (FrontLeftMotor.GetSelectedSensorPosition() < 12 && FrontRightMotor.GetSelectedSensorPosition() < 12) {
+    /*if (FrontLeftMotor.GetSelectedSensorPosition() < 12 && FrontRightMotor.GetSelectedSensorPosition() < 12) {
       LeftMotorDrive(0.2);
       RightMotorDrive(0.2);
     }
-    
+    */
     
     // Auto 1 - Same for all tarmacs
-    // Step #1 - Shoot cargo (code for that will be written here)
+    // Shoot cargo (code for that will be written here)
     /*if(FrontLeftMotor.GetSelectedSensorPosition() < 76.17 && FrontRightMotor.GetSelectedSensorPosition() < 76.17) {
       LeftMotorDrive(0.2);
       RightMotorDrive(0.2);
       Intake(0.2);
       
     }
-    if(FrontLeftMotor.GetSelectedSensorPosition() >0 && FrontRightMotor.GetSelectedSensorPosition() >0) {
+    if(FrontLeftMotor.GetSelectedSensorPosition() > 0 && FrontRightMotor.GetSelectedSensorPosition() >0) {
       LeftMotorDrive(-0.2);
       RightMotorDrive(-0.2);
     }*/
     //Shooter Code Goes Here...
     
     // Auto #2 - Blue Bottom & Red Top
-    
+    // Scoring code will go here
+   /* if (FrontLeftMotor.GetSelectedSensorPosition() < 248.14 && FrontRightMotor.GetSelectedSensorPosition() < 248.14) {
+    LeftMotorDrive (0.2);
+      RightMotorDrive (0.2);
+    }
 
-    // Auto #2 - Blue Top & Red Bottom
+     //Auto #2 - Blue Top & Red Bottom
+     Scoring code will go here
+    if(FrontLeftMotor.GetSelectedSensorPosition () < 76.17 && FrontRightMotor.GetSelectedSensorPosition () < 76.17) {
+      LeftMotorDrive (0.2);
+      RightMotorDrive (0.2);
+    }
     
-    
+  
+    //Auto #3 (All Tarmacs)
+    if(FrontLeftMotor.GetSelectedSensorPosition () < 76.17 && FrontRightMotor.GetSelectedSensorPosition () < 76.17) {
+      LeftMotorDrive (0.2);
+      RightMotorDrive (0.2);
 
-    // Auto #3 (wait to do this one)
 
-
-    
+    */
   } else {
     // Default Auto goes here
   }
 }
 
-void Robot::TeleopInit() {}
+void Robot::TeleopInit() {
+  FrontLeftMotor.SetSelectedSensorPosition(0);
+  MiddleLeftMotor.SetSelectedSensorPosition(0);
+  BackLeftMotor.SetSelectedSensorPosition(0);
+
+  FrontRightMotor.SetSelectedSensorPosition(0);
+  MiddleRightMotor.SetSelectedSensorPosition(0);
+  BackRightMotor.SetSelectedSensorPosition(0);
+}
 
 void Robot::TeleopPeriodic() {
 
@@ -233,9 +254,8 @@ double WheelX = Wheel.GetX();
   }*/
 
   frc::SmartDashboard::PutNumber("JoyStick Value", JoyY);
-  frc::SmartDashboard::PutNumber("LeftMotorValue", FrontLeftMotor.GetMotorOutputPercent());
-  frc::SmartDashboard::PutNumber("RightMotorValue", FrontRightMotor.GetMotorOutputPercent());
-  frc::SmartDashboard::PutNumber("TurnValue", WheelX);
+  frc::SmartDashboard::PutNumber("LeftEncVal", FrontLeftMotor.GetSelectedSensorPosition());
+  frc::SmartDashboard::PutNumber("RightEncVal", FrontRightMotor.GetSelectedSensorPosition());
 } 
 
 void Robot::DisabledInit() {}
