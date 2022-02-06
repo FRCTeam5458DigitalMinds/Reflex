@@ -17,7 +17,7 @@
 #include <frc/ADXRS450_Gyro.h>
 #include <frc/Solenoid.h>
 #include <WPILibVersion.h>
-
+#include <string.h>
 
 //Declarations
 
@@ -53,11 +53,11 @@ TalonFX ThirdClimbMotor {13};
 
 float turnFact = 0.9;
 
+
 //Gyro
 frc::ADXRS450_Gyro gyro;
+double gyroAngle = gyro.GetAngle();
 
-//Variables
-bool isStartingAngleSet;
 
 //PID (Proportional, Integral, Derivative) to calculate error and overshoot and correct it
 //double P, I, D, error, setpoint, rcw;
@@ -101,11 +101,12 @@ void PID() {
 void Robot::RobotInit() {
   m_chooser.SetDefaultOption(kAutoNameDefault, kAutoNameDefault);
   m_chooser.AddOption(kAutoNameCustom, kAutoNameCustom);
-  frc::SmartDashboard::PutData("Auto Modes", &m_chooser);
+  //frc::SmartDashboard::PutData("Auto Modes", &m_chooser);
 
   FrontLeftMotor.SetInverted(true);
   MiddleLeftMotor.SetInverted(true);
   BackLeftMotor.SetInverted(true);
+  
 }
 
 /**
@@ -140,30 +141,39 @@ void Robot::AutonomousInit() {
   } else {
     // Default Auto goes here
   }
-  FrontLeftMotor.SetSelectedSensorPosition(0);
-  
+  /*FrontLeftMotor.SetSelectedSensorPosition(0);
+  MiddleLeftMotor.SetSelectedSensorPosition(0);
+  BackLeftMotor.SetSelectedSensorPosition(0);
+
+  FrontRightMotor.SetSelectedSensorPosition(0);
+  MiddleRightMotor.SetSelectedSensorPosition(0);
+  BackRightMotor.SetSelectedSensorPosition(0);*/
 }
 
 void Robot::AutonomousPeriodic() {
+  //553.1248 cycles of the encoder per in. ---> Multiply by # of inches to find encoder units
   if (m_autoSelected == kAutoNameCustom) {
-    /*if (FrontLeftMotor.GetSelectedSensorPosition() < 12 && FrontRightMotor.GetSelectedSensorPosition() < 12) {
+    if (FrontLeftMotor.GetSelectedSensorPosition() < 12732.365 && FrontRightMotor.GetSelectedSensorPosition() < 12732.365) {
       LeftMotorDrive(0.2);
       RightMotorDrive(0.2);
     }
-    */
-    
+    else {
+      LeftMotorDrive(0);
+      RightMotorDrive(0);
+    }
+    /*
     // Auto 1 - Same for all tarmacs
     // Shoot cargo (code for that will be written here)
-    /*if(FrontLeftMotor.GetSelectedSensorPosition() < 76.17 && FrontRightMotor.GetSelectedSensorPosition() < 76.17) {
+    if (FrontLeftMotor.GetSelectedSensorPosition() < 76.17 && FrontRightMotor.GetSelectedSensorPosition() < 76.17) {
       LeftMotorDrive(0.2);
       RightMotorDrive(0.2);
       Intake(0.2);
       
     }
-    if(FrontLeftMotor.GetSelectedSensorPosition() > 0 && FrontRightMotor.GetSelectedSensorPosition() >0) {
+    if(FrontLeftMotor.GetSelectedSensorPosition() > 0 && FrontRightMotor.GetSelectedSensorPosition() > 0) {
       LeftMotorDrive(-0.2);
       RightMotorDrive(-0.2);
-    }*/
+    }
     //Shooter Code Goes Here...
     
     // Auto #2 - Blue Bottom & Red Top
@@ -208,13 +218,13 @@ void Robot::TeleopPeriodic() {
 double JoyY = -JoyStick1.GetY();
 double WheelX = Wheel.GetX();
 
-  if (WheelX > 0.05 && (JoyY > 0.05 || JoyY < -0.05)) {
-    LeftMotorDrive(-(turnFact * WheelX));
-    RightMotorDrive((turnFact * WheelX));
+  if (WheelX > 0.1 && (JoyY > 0.05 || JoyY < -0.05)) {
+    LeftMotorDrive((JoyY)/2);
+    RightMotorDrive((JoyY)/4);
   }
-  else if (WheelX < -0.05 && (JoyY > 0.05 || JoyY < -0.05)) {
-    LeftMotorDrive((turnFact * WheelX));
-    RightMotorDrive(-(turnFact * WheelX));
+  else if (WheelX < -0.1 && (JoyY > 0.05 || JoyY < -0.05)) {
+    LeftMotorDrive((JoyY)/4);
+    RightMotorDrive(JoyY/2);
   }
   //If joystick is pushed forward or backward
   else if (JoyY > 0.1 || JoyY < -0.1) {
@@ -224,11 +234,11 @@ double WheelX = Wheel.GetX();
   //Point turning (turning in place)
   else if (Wheel.GetRawButton(5)) {
     if (WheelX > 0) {
-      LeftMotorDrive(-(WheelX * WheelX));
-      RightMotorDrive((WheelX * WheelX));
-    } else if (WheelX < 0) {
-      LeftMotorDrive((WheelX * WheelX));
       RightMotorDrive(-(WheelX * WheelX));
+      LeftMotorDrive((WheelX * WheelX));
+    } else if (WheelX < 0) {
+      RightMotorDrive((WheelX * WheelX));
+      LeftMotorDrive(-(WheelX * WheelX));
     }
   } 
   //Regular turning while driving
@@ -238,7 +248,7 @@ double WheelX = Wheel.GetX();
   }
 
 
-  /*Intake Code (button # is subject to change)
+  //Intake Code (button # is subject to change)
   if(Xbox.GetRawButton(1)) {
     Intake(0.2);
   }
@@ -251,20 +261,58 @@ double WheelX = Wheel.GetX();
   //Climb Code
   if(Xbox.GetRawButton(3)) {
     Climb (0.2);
-  }*/
+  }
 
-  frc::SmartDashboard::PutNumber("JoyStick Value", JoyY);
-  frc::SmartDashboard::PutNumber("LeftEncVal", FrontLeftMotor.GetSelectedSensorPosition());
-  frc::SmartDashboard::PutNumber("RightEncVal", FrontRightMotor.GetSelectedSensorPosition());
+ 
 } 
 
 void Robot::DisabledInit() {}
 
 void Robot::DisabledPeriodic() {}
 
-void Robot::TestInit() {}
+void Robot::TestInit() {
+  FrontLeftMotor.SetSelectedSensorPosition(0);
+  MiddleLeftMotor.SetSelectedSensorPosition(0);
+  BackLeftMotor.SetSelectedSensorPosition(0);
 
-void Robot::TestPeriodic() {}
+  FrontRightMotor.SetSelectedSensorPosition(0);
+  MiddleRightMotor.SetSelectedSensorPosition(0);
+  BackRightMotor.SetSelectedSensorPosition(0);
+
+  //gyro.Reset();
+  gyro.Calibrate();
+}
+
+void Robot::TestPeriodic() {
+  
+
+  //Command to get angle from gyro is gyro.getAngle()
+
+  if(FrontLeftMotor.GetSelectedSensorPosition() < 75000 && FrontRightMotor.GetSelectedSensorPosition() < 75000) {
+      if (gyroAngle > 10) {
+        LeftMotorDrive(0.1/2);
+        RightMotorDrive(0.1);
+      }
+      else if (gyroAngle < -10) {
+        LeftMotorDrive(0.1);
+        RightMotorDrive(0.1/2);
+      }
+      else {
+        LeftMotorDrive(0.1);
+        RightMotorDrive(0.1);
+      }
+  }
+  else {
+    LeftMotorDrive(0);
+    RightMotorDrive(0);
+  }
+
+  frc::SmartDashboard::PutNumber("LeftEncVal", FrontLeftMotor.GetSelectedSensorPosition());
+  frc::SmartDashboard::PutNumber("RightEncVal", FrontRightMotor.GetSelectedSensorPosition());
+  //frc::SmartDashboard::PutNumber("Gyro", gyroAngle);
+  std::cout << "CurrentGyroVal: " << gyroAngle << std::endl;
+}
+
 
 #ifndef RUNNING_FRC_TESTS
 int main() {
