@@ -19,7 +19,7 @@
 #include <frc/Solenoid.h>
 #include <WPILibVersion.h>
 #include <string.h>
-#include <PigeonIMU.h>
+//#include <PigeonIMU.h>
 
 //Declarations
 
@@ -177,20 +177,27 @@ void Robot::AutonomousPeriodic() {
     }
     //Shooter Code Goes Here...
     
-    // Auto #2 - Blue Bottom & Red Top
+    // Auto #2 - Blue Bottom & Red Top (locations near terminal)
     // Scoring code will go here
    /* if (FrontLeftMotor.GetSelectedSensorPosition() < 137,252.387872 && FrontRightMotor.GetSelectedSensorPosition() < 137,252.387872) {
-    LeftMotorDrive (0.2);
-      RightMotorDrive (0.2);
-    }
-
-     //Auto #2 - Blue Top & Red Bottom
-     Scoring code will go here
-    if(FrontLeftMotor.GetSelectedSensorPosition () < 42,131.516016 && FrontRightMotor.GetSelectedSensorPosition () < 42,131.516016) {
       LeftMotorDrive (0.2);
       RightMotorDrive (0.2);
     }
-    
+
+     //Auto #2 - Blue Top & Red Bottom (Locations closest to hangar)
+     Scoring code will go here
+     //if (GyroSensor < 112.5)
+      RightMotorDrive(0.2);
+      LeftMotorDrive(-0.2);
+     else {
+       LeftMotorDrive(0);
+       RightMotorDrive(0);
+     }
+     
+    if (FrontLeftMotor.GetSelectedSensorPosition() < 222,991 && FrontRightMotor.GetSelectedSensorPosition() < 222,991) {
+    LeftMotorDrive (0.2);
+      RightMotorDrive (0.2);
+    }
   
     //Auto #3 (All Tarmacs)
     if(FrontLeftMotor.GetSelectedSensorPosition () < 42,131.516016 && FrontRightMotor.GetSelectedSensorPosition () < 42,131.516016) {
