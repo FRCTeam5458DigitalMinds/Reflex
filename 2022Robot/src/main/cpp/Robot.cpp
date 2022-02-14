@@ -18,8 +18,10 @@
 #include <frc/AnalogGyro.h>
 #include <frc/Solenoid.h>
 #include <WPILibVersion.h>
+#include <frc/controller/PIDController.h>
 #include <string.h>
-//#include <PigeonIMU.h>
+#include <cmath>
+#include <math.h>
 
 //Declarations
 
@@ -50,18 +52,23 @@ TalonFX FirstClimbMotor {10};
 TalonFX SecondClimbMotor {11};
 TalonFX ThirdClimbMotor {13};
 
+//Encoders
+double LeftDriveEncValue = FrontLeftMotor.GetSelectedSensorPosition();
+double RightDriveEncValue = FrontRightMotor.GetSelectedSensorPosition();
+double avgEncValue = (LeftDriveEncValue + RightDriveEncValue)/2;
+
 //Power Distribution Panel
 //frc::PowerDistribution::PowerDistribution();
 
 float turnFact = 0.9;
 
 //Gyro
-frc::ADXRS450_Gyro gyro;
+WPI_PigeonIMU gyro{6};
 double gyroAngle = gyro.GetAngle();
 
-
 //PID (Proportional, Integral, Derivative) to calculate error and overshoot and correct it
-//double P, I, D, error, setpoint, rcw;
+frc2::PIDController pid{0.4, 0, 0};
+double setpoint;
 
 //Set up motors to drive
 void LeftMotorDrive (double speed) {
@@ -88,15 +95,7 @@ void Climb (double speed) {
   SecondClimbMotor.Set(ControlMode::PercentOutput, speed);
   ThirdClimbMotor.Set(ControlMode::PercentOutput, speed);
 }
-/*void setSetpoint(int setpoint) {
-  this.setpoint = setpoint;
-}
-void PID() {
-  error = setpoint - gyro.getAngle() // Error = Target - Actual
-  this.integral += (error*.02) // Integral is increased by the error*time (which is .02 seconds using normal IterativeRobot)
-  derivative = (error - this.previous_error) / .02
-  rcw = P*error + I*self.integral + D*derivative
-}*/
+
 
 //Initializing robot & variables
 void Robot::RobotInit() {
@@ -154,14 +153,17 @@ void Robot::AutonomousInit() {
 void Robot::AutonomousPeriodic() {
   //553.1248 cycles of the encoder per in. ---> Multiply by # of inches to find encoder units
   if (m_autoSelected == kAutoNameCustom) {
-    if (FrontLeftMotor.GetSelectedSensorPosition() < 12732.365 && FrontRightMotor.GetSelectedSensorPosition() < 12732.365) {
-      LeftMotorDrive(0.2);
-      RightMotorDrive(0.2);
+    if (avgEncValue < 12732.365) {
+      frc::SmartDashboard::PutNumber("Average Encoder Value", avgEncValue);
+      setpoint = 12732.365;
+      LeftMotorDrive(pid.Calculate(avgEncValue, setpoint));
+      RightMotorDrive(pid.Calculate(avgEncValue, setpoint));
     }
     else {
       LeftMotorDrive(0);
       RightMotorDrive(0);
     }
+  }
     /*
     // Auto 1 - Same for all tarmacs
     // Shoot cargo (code for that will be written here)
@@ -205,10 +207,10 @@ void Robot::AutonomousPeriodic() {
       RightMotorDrive (0.2);
 
 
-    */
+    
   } else {
     // Default Auto goes here
-  }
+  }*/
 }
 
 void Robot::TeleopInit() {
@@ -292,11 +294,16 @@ void Robot::TestInit() {
 }
 
 void Robot::TestPeriodic() {
-  
 
-  //Command to get angle from gyro is gyro.getAngle()
 
-  /*if(FrontLeftMotor.GetSelectedSensorPosition() < 75000 && FrontRightMotor.GetSelectedSensorPosition() < 75000) {
+  //frc::SmartDashboard::PutNumber("LeftEncVal", LeftDriveEncValue);
+  //frc::SmartDashboard::PutNumber("RightEncVal", RightDriveEncValue);
+  frc::SmartDashboard::PutNumber("GyroValue", gyroAngle);
+  std::cout << "CurrentGyroVal: " << gyroAngle << std::endl;
+
+  /*Command to get angle from gyro is gyro.GetAngle()
+
+  if(FrontLeftMotor.GetSelectedSensorPosition() < 75000 && FrontRightMotor.GetSelectedSensorPosition() < 75000) {
       if (gyroAngle > 10) {
         LeftMotorDrive(0.1/2);
         RightMotorDrive(0.1);
@@ -314,12 +321,7 @@ void Robot::TestPeriodic() {
     LeftMotorDrive(0);
     RightMotorDrive(0);
   }*/
-
   
-  frc::SmartDashboard::PutNumber("LeftEncVal", FrontLeftMotor.GetSelectedSensorPosition());
-  frc::SmartDashboard::PutNumber("RightEncVal", FrontRightMotor.GetSelectedSensorPosition());
-  //frc::SmartDashboard::PutNumber("Gyro", gyroAngle);
-  std::cout << "CurrentGyroVal: " << gyroAngle << std::endl;
 }
 
 
