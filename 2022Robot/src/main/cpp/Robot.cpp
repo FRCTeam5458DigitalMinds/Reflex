@@ -64,7 +64,8 @@ float turnFact = 0.9;
 
 //Gyro
 WPI_PigeonIMU gyro{6};
-double gyroAngle = gyro.GetAngle();
+//PigeonIMU gyro{6};
+double gyroAngle = gyro.GetFusedHeading();
 
 //PID (Proportional, Integral, Derivative) to calculate error and overshoot and correct it
 frc2::PIDController pid{0.4, 0, 0};
@@ -273,7 +274,6 @@ double WheelX = Wheel.GetX();
     Climb (0.2);
   }
 
- 
 } 
 
 void Robot::DisabledInit() {}
@@ -289,17 +289,16 @@ void Robot::TestInit() {
   MiddleRightMotor.SetSelectedSensorPosition(0);
   BackRightMotor.SetSelectedSensorPosition(0);
 
-  gyro.Reset();
-  gyro.Calibrate();
+
 }
 
 void Robot::TestPeriodic() {
 
-
   //frc::SmartDashboard::PutNumber("LeftEncVal", LeftDriveEncValue);
   //frc::SmartDashboard::PutNumber("RightEncVal", RightDriveEncValue);
-  frc::SmartDashboard::PutNumber("GyroValue", gyroAngle);
+  
   std::cout << "CurrentGyroVal: " << gyroAngle << std::endl;
+  frc::SmartDashboard::PutNumber("GyroValue", gyroAngle);
 
   /*Command to get angle from gyro is gyro.GetAngle()
 
