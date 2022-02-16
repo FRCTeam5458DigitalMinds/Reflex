@@ -68,7 +68,7 @@ WPI_PigeonIMU gyro{6};
 double gyroAngle = gyro.GetFusedHeading();
 
 //PID (Proportional, Integral, Derivative) to calculate error and overshoot and correct it
-frc2::PIDController pid{0.4, 0, 0};
+frc2::PIDController pid{0.1, 0, 0};
 double setpoint;
 
 //Set up motors to drive
@@ -165,16 +165,17 @@ void Robot::AutonomousPeriodic() {
       RightMotorDrive(0);
     }
   }
+
     /*
     // Auto 1 - Same for all tarmacs
     // Shoot cargo (code for that will be written here)
-    if (FrontLeftMotor.GetSelectedSensorPosition() < 42,131.516016 && FrontRightMotor.GetSelectedSensorPosition() < 42,131.516016) {
+    if (avgEncValue < 42,131.516016) {
       LeftMotorDrive(0.2);
       RightMotorDrive(0.2);
       Intake(0.2);
       
     }
-    if(FrontLeftMotor.GetSelectedSensorPosition() > 0 && FrontRightMotor.GetSelectedSensorPosition() > 0) {
+    if(avgEncValue > 0) {
       LeftMotorDrive(-0.2);
       RightMotorDrive(-0.2);
     }
@@ -182,7 +183,7 @@ void Robot::AutonomousPeriodic() {
     
     // Auto #2 - Blue Bottom & Red Top (locations near terminal)
     // Scoring code will go here
-   /* if (FrontLeftMotor.GetSelectedSensorPosition() < 137,252.387872 && FrontRightMotor.GetSelectedSensorPosition() < 137,252.387872) {
+   /* if (avgEncValue < 137,252.387872) {
       LeftMotorDrive (0.2);
       RightMotorDrive (0.2);
     }
@@ -197,13 +198,13 @@ void Robot::AutonomousPeriodic() {
        RightMotorDrive(0);
      }
      
-    if (FrontLeftMotor.GetSelectedSensorPosition() < 222,991 && FrontRightMotor.GetSelectedSensorPosition() < 222,991) {
-    LeftMotorDrive (0.2);
+    if (avgEncValue < 222,991) {
+      LeftMotorDrive (0.2);
       RightMotorDrive (0.2);
     }
   
     //Auto #3 (All Tarmacs)
-    if(FrontLeftMotor.GetSelectedSensorPosition () < 42,131.516016 && FrontRightMotor.GetSelectedSensorPosition () < 42,131.516016) {
+    if(avgEncValue < 42,131.516016) {
       LeftMotorDrive (0.2);
       RightMotorDrive (0.2);
 
@@ -289,16 +290,39 @@ void Robot::TestInit() {
   MiddleRightMotor.SetSelectedSensorPosition(0);
   BackRightMotor.SetSelectedSensorPosition(0);
 
-
+  gyro.Reset();
+  gyro.Calibrate();
 }
 
 void Robot::TestPeriodic() {
+  if (gyro.GetAngle() < 78) {
+    LeftMotorDrive(0.1);
+    RightMotorDrive(-0.1);
+  }
+  else {
+    LeftMotorDrive(0);
+    RightMotorDrive(0);
+  }
+
 
   //frc::SmartDashboard::PutNumber("LeftEncVal", LeftDriveEncValue);
   //frc::SmartDashboard::PutNumber("RightEncVal", RightDriveEncValue);
   
-  std::cout << "CurrentGyroVal: " << gyroAngle << std::endl;
-  frc::SmartDashboard::PutNumber("GyroValue", gyroAngle);
+  /*std::cout << "CurrentGyroVal: " << gyro.GetAngle() << std::endl;
+  frc::SmartDashboard::PutNumber("GyroValue", gyroAngle);*/
+
+  /*if ((LeftDriveEncValue + RightDriveEncValue)/2 < 12732.365) {
+      frc::SmartDashboard::PutNumber("Average Encoder Value", avgEncValue);
+      setpoint = 12732.365;
+      //LeftMotorDrive(pid.Calculate(avgEncValue, setpoint));
+      //RightMotorDrive(pid.Calculate(avgEncValue, setpoint));
+      LeftMotorDrive(0.1);
+      RightMotorDrive(0.1);
+  }
+  else {
+      LeftMotorDrive(0);
+      RightMotorDrive(0);
+  }*/
 
   /*Command to get angle from gyro is gyro.GetAngle()
 
