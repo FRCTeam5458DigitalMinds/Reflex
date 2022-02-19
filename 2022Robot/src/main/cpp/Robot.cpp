@@ -65,10 +65,10 @@ float turnFact = 0.9;
 //Gyro
 WPI_PigeonIMU gyro{6};
 //PigeonIMU gyro{6};
-double gyroAngle = gyro.GetFusedHeading();
+double gyroAngle = gyro.GetAngle();
 
 //PID (Proportional, Integral, Derivative) to calculate error and overshoot and correct it
-frc2::PIDController pid{0.1, 0, 0};
+frc2::PIDController::PIDController pid{0.1, 0.1, 0};
 double setpoint;
 
 //Set up motors to drive
@@ -295,9 +295,10 @@ void Robot::TestInit() {
 }
 
 void Robot::TestPeriodic() {
-  if (gyro.GetAngle() < 78) {
-    LeftMotorDrive(0.1);
-    RightMotorDrive(-0.1);
+  if (gyro.GetAngle() < 90) {
+    setpoint = 90;
+    LeftMotorDrive(pid.Calculate(gyro.GetAngle(), setpoint));
+    RightMotorDrive(-pid.Calculate(gyro.GetAngle(), setpoint));
   }
   else {
     LeftMotorDrive(0);
@@ -308,8 +309,7 @@ void Robot::TestPeriodic() {
   //frc::SmartDashboard::PutNumber("LeftEncVal", LeftDriveEncValue);
   //frc::SmartDashboard::PutNumber("RightEncVal", RightDriveEncValue);
   
-  /*std::cout << "CurrentGyroVal: " << gyro.GetAngle() << std::endl;
-  frc::SmartDashboard::PutNumber("GyroValue", gyroAngle);*/
+  std::cout << "PID P Val: " << pid.GetP() << std::endl;
 
   /*if ((LeftDriveEncValue + RightDriveEncValue)/2 < 12732.365) {
       frc::SmartDashboard::PutNumber("Average Encoder Value", avgEncValue);
