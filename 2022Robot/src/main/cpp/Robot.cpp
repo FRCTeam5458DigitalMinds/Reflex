@@ -17,6 +17,10 @@
 #include <frc/ADXRS450_Gyro.h>
 #include <frc/AnalogGyro.h>
 #include <frc/Solenoid.h>
+#include <frc/Compressor.h>
+#include <frc/PneumaticsControlModule.h>
+#include <frc/PneumaticsModuleType.h>
+#include <frc/CompressorConfigType.h>
 #include <WPILibVersion.h>
 #include <frc/controller/PIDController.h>
 #include <string.h>
@@ -62,14 +66,25 @@ double avgEncValue = (LeftDriveEncValue + RightDriveEncValue)/2;
 
 float turnFact = 0.9;
 
+//Pneumatics
+frc::Compressor pcmCompressor{0, frc::PneumaticsModuleType::CTREPCM};
+
+frc::Solenoid solenoid1{frc::PneumaticsModuleType::CTREPCM, 1};
+frc::Solenoid solenoid2{frc::PneumaticsModuleType::CTREPCM, 2};
+//frc::Solenoid
+
 //Gyro
 WPI_PigeonIMU gyro{6};
 //PigeonIMU gyro{6};
 double gyroAngle = gyro.GetAngle();
 
 //PID (Proportional, Integral, Derivative) to calculate error and overshoot and correct it
-frc2::PIDController::PIDController pid{0.1, 0.1, 0};
+//frc2::PIDController pid{0.1, 0, 0};
+double PVal = 0.1;
 double setpoint;
+double PIDOutput;
+double turnError;
+
 
 //Set up motors to drive
 void LeftMotorDrive (double speed) {
@@ -154,7 +169,7 @@ void Robot::AutonomousInit() {
 void Robot::AutonomousPeriodic() {
   //553.1248 cycles of the encoder per in. ---> Multiply by # of inches to find encoder units
   if (m_autoSelected == kAutoNameCustom) {
-    if (avgEncValue < 12732.365) {
+    /*if (avgEncValue < 12732.365) {
       frc::SmartDashboard::PutNumber("Average Encoder Value", avgEncValue);
       setpoint = 12732.365;
       LeftMotorDrive(pid.Calculate(avgEncValue, setpoint));
@@ -164,7 +179,7 @@ void Robot::AutonomousPeriodic() {
       LeftMotorDrive(0);
       RightMotorDrive(0);
     }
-  }
+  }*/
 
     /*
     // Auto 1 - Same for all tarmacs
@@ -183,7 +198,7 @@ void Robot::AutonomousPeriodic() {
     
     // Auto #2 - Blue Bottom & Red Top (locations near terminal)
     // Scoring code will go here
-   /* if (avgEncValue < 137,252.387872) {
+    if (avgEncValue < 137,252.387872) {
       LeftMotorDrive (0.2);
       RightMotorDrive (0.2);
     }
@@ -213,6 +228,7 @@ void Robot::AutonomousPeriodic() {
   } else {
     // Default Auto goes here
   }*/
+  }
 }
 
 void Robot::TeleopInit() {
@@ -282,34 +298,49 @@ void Robot::DisabledInit() {}
 void Robot::DisabledPeriodic() {}
 
 void Robot::TestInit() {
-  FrontLeftMotor.SetSelectedSensorPosition(0);
+  /*FrontLeftMotor.SetSelectedSensorPosition(0);
   MiddleLeftMotor.SetSelectedSensorPosition(0);
   BackLeftMotor.SetSelectedSensorPosition(0);
 
   FrontRightMotor.SetSelectedSensorPosition(0);
   MiddleRightMotor.SetSelectedSensorPosition(0);
-  BackRightMotor.SetSelectedSensorPosition(0);
+  BackRightMotor.SetSelectedSensorPosition(0);*/
 
+  setpoint = 0;
   gyro.Reset();
   gyro.Calibrate();
 }
 
 void Robot::TestPeriodic() {
+  //Find the distance from goal angle
+  turnError = (setpoint - gyro.GetAngle());
+  //Multiply by constant PVal to get motor speed; this will decrease as the robot gets closer to the goal angle
+  PIDOutput = PVal * turnError;
+
+  if (PIDOutput > 1) {
+    PIDOutput = 1;
+  }
+  
+  //Determine tolerance of gyro
   if (gyro.GetAngle() < 90) {
     setpoint = 90;
-    LeftMotorDrive(pid.Calculate(gyro.GetAngle(), setpoint));
-    RightMotorDrive(-pid.Calculate(gyro.GetAngle(), setpoint));
+    LeftMotorDrive(PIDOutput/5);
+    RightMotorDrive(-PIDOutput/5);
+    //LeftMotorDrive(0.1);
+    //RightMotorDrive(-0.1);
+    if (gyro.GetAngle() > 90) {
+      LeftMotorDrive(-0.1);
+      RightMotorDrive(0.1);
+    }
   }
   else {
     LeftMotorDrive(0);
     RightMotorDrive(0);
   }
-
-
-  //frc::SmartDashboard::PutNumber("LeftEncVal", LeftDriveEncValue);
-  //frc::SmartDashboard::PutNumber("RightEncVal", RightDriveEncValue);
   
-  std::cout << "PID P Val: " << pid.GetP() << std::endl;
+  std::cout << "Gyro Angle: " << gyro.GetAngle() << std::endl;
+  
+  //std::cout << "PID P Val: " << pid.GetP() << std::endl;
 
   /*if ((LeftDriveEncValue + RightDriveEncValue)/2 < 12732.365) {
       frc::SmartDashboard::PutNumber("Average Encoder Value", avgEncValue);
