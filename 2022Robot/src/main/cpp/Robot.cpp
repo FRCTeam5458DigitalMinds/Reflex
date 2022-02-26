@@ -298,13 +298,13 @@ void Robot::DisabledInit() {}
 void Robot::DisabledPeriodic() {}
 
 void Robot::TestInit() {
-  /*FrontLeftMotor.SetSelectedSensorPosition(0);
+  FrontLeftMotor.SetSelectedSensorPosition(0);
   MiddleLeftMotor.SetSelectedSensorPosition(0);
   BackLeftMotor.SetSelectedSensorPosition(0);
 
   FrontRightMotor.SetSelectedSensorPosition(0);
   MiddleRightMotor.SetSelectedSensorPosition(0);
-  BackRightMotor.SetSelectedSensorPosition(0);*/
+  BackRightMotor.SetSelectedSensorPosition(0);
 
   setpoint = 0;
   gyro.Reset();
@@ -340,7 +340,6 @@ void Robot::TestPeriodic() {
   
   std::cout << "Gyro Angle: " << gyro.GetAngle() << std::endl;
   
-  //std::cout << "PID P Val: " << pid.GetP() << std::endl;
 
   /*if ((LeftDriveEncValue + RightDriveEncValue)/2 < 12732.365) {
       frc::SmartDashboard::PutNumber("Average Encoder Value", avgEncValue);
