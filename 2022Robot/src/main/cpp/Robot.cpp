@@ -42,10 +42,9 @@ TalonFX FrontRightMotor {1};
 TalonFX MiddleRightMotor {2};
 TalonFX BackRightMotor {3};
 
-
 //Intake Motors
-TalonFX LeftIntakeMotor {6};
-TalonFX RightIntakeMotor {7};
+VictorSPX IntakeMotor {8};
+
 
 //Shooter Motors
 TalonFX LeftShooterMotor {12};
@@ -56,11 +55,6 @@ TalonFX FirstClimbMotor {10};
 TalonFX SecondClimbMotor {11};
 TalonFX ThirdClimbMotor {13};
 
-//Encoders
-double LeftDriveEncValue = FrontLeftMotor.GetSelectedSensorPosition();
-double RightDriveEncValue = FrontRightMotor.GetSelectedSensorPosition();
-double avgEncValue = (LeftDriveEncValue + RightDriveEncValue)/2;
-
 //Power Distribution Panel
 //frc::PowerDistribution::PowerDistribution();
 
@@ -68,7 +62,6 @@ float turnFact = 0.9;
 
 //Pneumatics
 frc::Compressor pcmCompressor{0, frc::PneumaticsModuleType::CTREPCM};
-
 frc::Solenoid solenoid1{frc::PneumaticsModuleType::CTREPCM, 1};
 frc::Solenoid solenoid2{frc::PneumaticsModuleType::CTREPCM, 2};
 //frc::Solenoid
@@ -88,7 +81,6 @@ double turnError;
 
 //Set up motors to drive
 void LeftMotorDrive (double speed) {
-  //negative speed because left motors are reversed
   FrontLeftMotor.Set(ControlMode::PercentOutput, speed);
   MiddleLeftMotor.Set(ControlMode::PercentOutput, speed);
   BackLeftMotor.Set(ControlMode::PercentOutput, speed);
@@ -99,8 +91,7 @@ void RightMotorDrive (double speed) {
   BackRightMotor.Set(ControlMode::PercentOutput, speed);
 }
 void Intake (double speed) {
-  LeftIntakeMotor.Set(ControlMode::PercentOutput, speed);
-  RightIntakeMotor.Set(ControlMode::PercentOutput, speed);
+  IntakeMotor.Set(ControlMode::PercentOutput, speed);
 }
 void Shooter (double speed) {
   LeftShooterMotor.Set(ControlMode::PercentOutput, speed);
@@ -168,6 +159,11 @@ void Robot::AutonomousInit() {
 
 void Robot::AutonomousPeriodic() {
   //553.1248 cycles of the encoder per in. ---> Multiply by # of inches to find encoder units
+
+  double LeftDriveEncValue = FrontLeftMotor.GetSelectedSensorPosition();
+  double RightDriveEncValue = FrontRightMotor.GetSelectedSensorPosition();
+  double avgEncValue = (LeftDriveEncValue + RightDriveEncValue)/2;
+
   if (m_autoSelected == kAutoNameCustom) {
     /*if (avgEncValue < 12732.365) {
       frc::SmartDashboard::PutNumber("Average Encoder Value", avgEncValue);
@@ -277,17 +273,17 @@ double WheelX = Wheel.GetX();
 
 
   //Intake Code (button # is subject to change)
-  if(Xbox.GetRawButton(1)) {
+  if(Xbox.GetRawButton(3)) {
     Intake(0.2);
   }
 
   //Shooter Code
-  if(Xbox.GetRawButton(2)) {
+  if(Xbox.GetRawButton(4)) {
     Shooter(0.2);
   }
 
-  //Climb Code
-  if(Xbox.GetRawButton(3)) {
+  //Climb Code 
+  if(Xbox.GetRawButton(5)) {
     Climb (0.2);
   }
 
