@@ -43,7 +43,7 @@ TalonFX MiddleRightMotor {2};
 TalonFX BackRightMotor {3};
 
 //Intake Motors
-VictorSPX IntakeMotor {8};
+VictorSPX TestIntake {7};
 
 
 //Shooter Motors
@@ -61,10 +61,8 @@ TalonFX ThirdClimbMotor {13};
 float turnFact = 0.9;
 
 //Pneumatics
-frc::Compressor pcmCompressor{0, frc::PneumaticsModuleType::CTREPCM};
-frc::Solenoid solenoid1{frc::PneumaticsModuleType::CTREPCM, 1};
-frc::Solenoid solenoid2{frc::PneumaticsModuleType::CTREPCM, 2};
-//frc::Solenoid
+//frc::Compressor pcmCompressor{0, frc::PneumaticsModuleType::CTREPCM};
+frc::Solenoid IntakeBar{frc::PneumaticsModuleType::CTREPCM, 5};
 
 //Gyro
 WPI_PigeonIMU gyro{6};
@@ -91,7 +89,7 @@ void RightMotorDrive (double speed) {
   BackRightMotor.Set(ControlMode::PercentOutput, speed);
 }
 void Intake (double speed) {
-  IntakeMotor.Set(ControlMode::PercentOutput, speed);
+  TestIntake.Set(ControlMode::PercentOutput, speed);
 }
 void Shooter (double speed) {
   LeftShooterMotor.Set(ControlMode::PercentOutput, speed);
@@ -113,6 +111,9 @@ void Robot::RobotInit() {
   FrontLeftMotor.SetInverted(true);
   MiddleLeftMotor.SetInverted(true);
   BackLeftMotor.SetInverted(true);
+
+  //Drop intake down at the beginning of a match
+  IntakeBar.Set(true);
   
 }
 
@@ -184,7 +185,6 @@ void Robot::AutonomousPeriodic() {
       LeftMotorDrive(0.2);
       RightMotorDrive(0.2);
       Intake(0.2);
-      
     }
     if(avgEncValue > 0) {
       LeftMotorDrive(-0.2);
@@ -201,9 +201,10 @@ void Robot::AutonomousPeriodic() {
 
      //Auto #2 - Blue Top & Red Bottom (Locations closest to hangar)
      Scoring code will go here
-     //if (GyroSensor < 112.5)
+    if (gyro.GetAngle() < 112.5) {
       RightMotorDrive(0.2);
       LeftMotorDrive(-0.2);
+     }
      else {
        LeftMotorDrive(0);
        RightMotorDrive(0);
@@ -273,18 +274,28 @@ double WheelX = Wheel.GetX();
 
 
   //Intake Code (button # is subject to change)
-  if(Xbox.GetRawButton(3)) {
-    Intake(0.2);
+  if(Xbox.GetRawButton(4)) {
+    Intake(0.5);
+  }
+  else {
+    Intake(0);
   }
 
   //Shooter Code
-  if(Xbox.GetRawButton(4)) {
+  if(Xbox.GetRawButton(3)) {
     Shooter(0.2);
+  } 
+  else {
+    Shooter(0);
   }
 
   //Climb Code 
   if(Xbox.GetRawButton(5)) {
     Climb (0.2);
+  }
+
+  if(Xbox.GetRawButtonPressed(7)) {
+    IntakeBar.Set(!IntakeBar.Get());
   }
 
 } 
