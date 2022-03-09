@@ -20,40 +20,52 @@
 #include <frc/Compressor.h>
 #include <frc/PneumaticsControlModule.h>
 #include <frc/PneumaticsModuleType.h>
+#include <frc/PneumaticsBase.h>
 #include <frc/CompressorConfigType.h>
 #include <WPILibVersion.h>
 #include <frc/controller/PIDController.h>
-#include <string.h>
 #include <cmath>
 #include <math.h>
+#include "frc/smartdashboard/Smartdashboard.h"
+#include "networktables/NetworkTable.h"
+#include "networktables/NetworkTableInstance.h"
+#include "networktables/NetworkTableEntry.h"
+#include "networktables/NetworkTableValue.h"
+#include "wpi/span.h"
+#include "cameraserver/CameraServer.h"
+#include "networktables/NetworkTableEntry.inc"
+#include "networktables/NetworkTableInstance.inc"
+#include <chrono>
+#include <ctime>
+#include <ratio>
+
+using namespace std::chrono;
+
 
 //Declarations
 
 //Joysticks
 frc::Joystick JoyStick1(0), Wheel(2), Xbox(1);
 
-
 //Drive Motors
-TalonFX FrontLeftMotor {15};
-TalonFX MiddleLeftMotor {14};
-TalonFX BackLeftMotor {13};
+TalonFX FrontRightMotor {15};
+TalonFX MiddleRightMotor {14};
+TalonFX BackRightMotor {13};
 
-TalonFX FrontRightMotor {1};
-TalonFX MiddleRightMotor {2};
-TalonFX BackRightMotor {3};
+TalonFX FrontLeftMotor {1};
+TalonFX MiddleLeftMotor {2};
+TalonFX BackLeftMotor {3};
 
 //Intake Motors
 VictorSPX TestIntake {7};
 
 
 //Shooter Motors
-TalonFX LeftShooterMotor {12};
-TalonFX RightShooterMotor {69};
+TalonFX ShooterMotor {10};
 
 //Climb Motors
-TalonFX FirstClimbMotor {10};
-TalonFX SecondClimbMotor {11};
-TalonFX ThirdClimbMotor {13};
+TalonFX LeftClimbMotor {12};
+TalonFX RightClimbMotor {11};
 
 //Power Distribution Panel
 //frc::PowerDistribution::PowerDistribution();
@@ -61,20 +73,20 @@ TalonFX ThirdClimbMotor {13};
 float turnFact = 0.9;
 
 //Pneumatics
-//frc::Compressor pcmCompressor{0, frc::PneumaticsModuleType::CTREPCM};
+frc::Compressor pcmCompressor{0, frc::PneumaticsModuleType::CTREPCM};
 frc::Solenoid IntakeBar{frc::PneumaticsModuleType::CTREPCM, 5};
+/*frc::PneumaticsControlModule PneumaticsControlModule();
+PneumaticsControlModule.EnableCompressorAnalog(1, 10);
+pcmCompressor.EnableAnalog(1, 10);
+double current = pcmCompressor.GetCurrent();*/
 
 //Gyro
 WPI_PigeonIMU gyro{6};
 //PigeonIMU gyro{6};
-double gyroAngle = gyro.GetAngle();
 
 //PID (Proportional, Integral, Derivative) to calculate error and overshoot and correct it
 //frc2::PIDController pid{0.1, 0, 0};
 double PVal = 0.1;
-double setpoint;
-double PIDOutput;
-double turnError;
 
 
 //Set up motors to drive
@@ -92,13 +104,11 @@ void Intake (double speed) {
   TestIntake.Set(ControlMode::PercentOutput, speed);
 }
 void Shooter (double speed) {
-  LeftShooterMotor.Set(ControlMode::PercentOutput, speed);
-  RightShooterMotor.Set(ControlMode::PercentOutput, speed);
+  ShooterMotor.Set(ControlMode::PercentOutput, speed);
 }
 void Climb (double speed) {
-  FirstClimbMotor.Set(ControlMode::PercentOutput, speed);
-  SecondClimbMotor.Set(ControlMode::PercentOutput, speed);
-  ThirdClimbMotor.Set(ControlMode::PercentOutput, speed);
+  LeftClimbMotor.Set(ControlMode::PercentOutput, speed);
+  RightClimbMotor.Set(ControlMode::PercentOutput, speed);
 }
 
 
@@ -125,7 +135,17 @@ void Robot::RobotInit() {
  * <p> This runs after the mode specific periodic functions, but before
  * LiveWindow and SmartDashboard integrated updating.
  */
-void Robot::RobotPeriodic() {}
+void Robot::RobotPeriodic() {
+
+  //Limelight
+  auto inst = nt::NetworkTableInstance::GetDefault();
+  nt::NetworkTableInstance::GetDefault().GetTable("limelight")->GetNumber("<variablename>",0.0);
+  double targetOffsetAngle_Horizontal = nt::NetworkTableInstance::GetDefault().GetTable("limelight")->GetNumber("tx",0.0);
+  double targetOffsetAngle_Vertical = nt::NetworkTableInstance::GetDefault().GetTable("limelight")->GetNumber("ty",0.0);
+  double targetArea = nt::NetworkTableInstance::GetDefault().GetTable("limelight")->GetNumber("ta",0.0);
+  double targetSkew = nt::NetworkTableInstance::GetDefault().GetTable("limelight")->GetNumber("ts",0.0);
+
+}
 
 /**
  * This autonomous (alon)g with the chooser code above) shows how to select
@@ -165,66 +185,78 @@ void Robot::AutonomousPeriodic() {
   double RightDriveEncValue = FrontRightMotor.GetSelectedSensorPosition();
   double avgEncValue = (LeftDriveEncValue + RightDriveEncValue)/2;
 
-  if (m_autoSelected == kAutoNameCustom) {
-    /*if (avgEncValue < 12732.365) {
-      frc::SmartDashboard::PutNumber("Average Encoder Value", avgEncValue);
-      setpoint = 12732.365;
-      LeftMotorDrive(pid.Calculate(avgEncValue, setpoint));
-      RightMotorDrive(pid.Calculate(avgEncValue, setpoint));
-    }
-    else {
-      LeftMotorDrive(0);
-      RightMotorDrive(0);
-    }
-  }*/
+  double setpoint;
+  double distError = (setpoint - avgEncValue);
+  double turnError = (setpoint - gyro.GetAngle());
 
-    /*
+  double turnPIDOutput = PVal * turnError;
+  double distPIDOutput = PVal * distError;
+
+  if (turnPIDOutput > 1) {
+    turnPIDOutput = 1;
+  } else if (distPIDOutput > 1) {
+    distPIDOutput = 1;
+  }
+
+  if (m_autoSelected == kAutoNameCustom) {
+
+    
     // Auto 1 - Same for all tarmacs
-    // Shoot cargo (code for that will be written here)
-    if (avgEncValue < 42,131.516016) {
-      LeftMotorDrive(0.2);
-      RightMotorDrive(0.2);
+    //Shooter(#);
+    if (avgEncValue < 42131.516016) {
+      setpoint = 42131.516016;
+      
+      LeftMotorDrive(distPIDOutput/5);
+      RightMotorDrive(distPIDOutput/5);
       Intake(0.2);
     }
-    if(avgEncValue > 0) {
-      LeftMotorDrive(-0.2);
-      RightMotorDrive(-0.2);
-    }
-    //Shooter Code Goes Here...
+    if (avgEncValue > 42131.516016) {
+      LeftMotorDrive(-distPIDOutput/5);
+      RightMotorDrive(-distPIDOutput/5);
+      Intake(0);
+    } /*else if (avgEncValue <= #) {
+      LeftMotorDrive(0);
+      RightMotorDrive(0);
+      //Shooter(#);
+    }*/
+    
     
     // Auto #2 - Blue Bottom & Red Top (locations near terminal)
-    // Scoring code will go here
-    if (avgEncValue < 137,252.387872) {
-      LeftMotorDrive (0.2);
-      RightMotorDrive (0.2);
+    //Shooter(#);
+    if (avgEncValue < 137252.387872) {
+      setpoint = 137252.387872;
+      
+      LeftMotorDrive(distPIDOutput/5);
+      RightMotorDrive(distPIDOutput/5);
+      Intake(0.2);
     }
 
-     //Auto #2 - Blue Top & Red Bottom (Locations closest to hangar)
-     Scoring code will go here
+    //Auto #2 - Blue Top & Red Bottom (Locations closest to hangar)
+    //Shooter(#);
     if (gyro.GetAngle() < 112.5) {
-      RightMotorDrive(0.2);
-      LeftMotorDrive(-0.2);
+      RightMotorDrive(distPIDOutput/5);
+      LeftMotorDrive(-distPIDOutput/5);
      }
      else {
        LeftMotorDrive(0);
        RightMotorDrive(0);
      }
      
-    if (avgEncValue < 222,991) {
-      LeftMotorDrive (0.2);
-      RightMotorDrive (0.2);
+    if (avgEncValue < 222991) {
+      LeftMotorDrive(distPIDOutput/5);
+      RightMotorDrive(distPIDOutput/5);
+    } else {
+      LeftMotorDrive(0);
+      RightMotorDrive(0);
     }
   
     //Auto #3 (All Tarmacs)
-    if(avgEncValue < 42,131.516016) {
-      LeftMotorDrive (0.2);
-      RightMotorDrive (0.2);
-
-
-    
+    if(avgEncValue < 42131.516016) {
+      LeftMotorDrive(0.2);
+      RightMotorDrive(0.2);
   } else {
     // Default Auto goes here
-  }*/
+  }
   }
 }
 
@@ -275,7 +307,7 @@ double WheelX = Wheel.GetX();
 
   //Intake Code (button # is subject to change)
   if(Xbox.GetRawButton(4)) {
-    Intake(0.5);
+    Intake(0.75);
   }
   else {
     Intake(0);
@@ -283,7 +315,7 @@ double WheelX = Wheel.GetX();
 
   //Shooter Code
   if(Xbox.GetRawButton(3)) {
-    Shooter(0.2);
+    Shooter(-1);
   } 
   else {
     Shooter(0);
@@ -291,7 +323,9 @@ double WheelX = Wheel.GetX();
 
   //Climb Code 
   if(Xbox.GetRawButton(5)) {
-    Climb (0.2);
+    Climb (0.5);
+  } else {
+    Climb (0);
   }
 
   if(Xbox.GetRawButtonPressed(7)) {
@@ -313,22 +347,17 @@ void Robot::TestInit() {
   MiddleRightMotor.SetSelectedSensorPosition(0);
   BackRightMotor.SetSelectedSensorPosition(0);
 
-  setpoint = 0;
   gyro.Reset();
   gyro.Calibrate();
+
+  
 }
 
-void Robot::TestPeriodic() {
-  //Find the distance from goal angle
-  turnError = (setpoint - gyro.GetAngle());
-  //Multiply by constant PVal to get motor speed; this will decrease as the robot gets closer to the goal angle
-  PIDOutput = PVal * turnError;
+steady_clock::time_point clock_begin = steady_clock::now();
 
-  if (PIDOutput > 1) {
-    PIDOutput = 1;
-  }
-  
-  //Determine tolerance of gyro
+void Robot::TestPeriodic() {
+
+  /*//Determine tolerance of gyro
   if (gyro.GetAngle() < 90) {
     setpoint = 90;
     LeftMotorDrive(PIDOutput/5);
@@ -343,9 +372,25 @@ void Robot::TestPeriodic() {
   else {
     LeftMotorDrive(0);
     RightMotorDrive(0);
+  }*/
+
+
+  //Timer test for intake
+  steady_clock::time_point clock_end = steady_clock::now();
+  steady_clock::duration time_span = clock_end - clock_begin;
+
+  double seconds = double(time_span.count()) * steady_clock::period::num / steady_clock::period::den;
+
+  std::cout << "Time (seconds)" << seconds << std::endl;
+
+  if (seconds < 6) {
+    Intake (0.75);
+  } else {
+    Intake (0);
   }
+
   
-  std::cout << "Gyro Angle: " << gyro.GetAngle() << std::endl;
+  //std::cout << "Gyro Angle: " << gyro.GetAngle() << std::endl;
   
 
   /*if ((LeftDriveEncValue + RightDriveEncValue)/2 < 12732.365) {
