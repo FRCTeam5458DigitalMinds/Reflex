@@ -302,12 +302,7 @@ double WheelX = Wheel.GetX();
   if (WheelX > 0.1 && (JoyY > 0.05 || JoyY < -0.05)) {
     LeftMotorDrive((JoyY)/4);
     RightMotorDrive((JoyY)/2);
-  } /*else if(Xbox.GetRawButton(8)) {
-    if(LeftDriveEncValue > 6660) {
-      LeftMotorDrive(-0.5);
-      RightMotorDrive(-0.5);
-    }
-  }*/
+  } 
   else if (WheelX < -0.1 && (JoyY > 0.05 || JoyY < -0.05)) {
     LeftMotorDrive((JoyY)/2);
     RightMotorDrive(JoyY/4);
@@ -352,8 +347,14 @@ double WheelX = Wheel.GetX();
     Conveyor(0);
   }
 
-  //Line up code
-  
+  //Line up code (robot drives backward until it is 6660 encoder units (~1 ft) away from the hub)
+  if(Xbox.GetRawButton(8)) {
+    if(avgEncValue > 6660) {
+      LeftMotorDrive(-0.5);
+      RightMotorDrive(-0.5);
+    }
+  }
+
   //Shooter Code
   if(Xbox.GetRawButton(4)) {
     Shooter(-0.35);
