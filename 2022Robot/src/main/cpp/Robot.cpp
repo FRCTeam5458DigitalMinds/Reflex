@@ -57,11 +57,14 @@ TalonFX MiddleLeftMotor {2};
 TalonFX BackLeftMotor {3};
 
 //Intake Motors
-VictorSPX TestIntake {7};
-
+VictorSPX Intake {5};
 
 //Shooter Motors
-TalonFX ShooterMotor {10};
+VictorSPX ConveyorMotor1 {4};
+VictorSPX ConveyorMotor3 {7};
+VictorSPX ConveyorMotor2 {8};
+TalonFX ShooterMotor1 {10};
+TalonFX ShooterMotor2 {9};
 
 //Climb Motors
 TalonFX LeftClimbMotor {12};
@@ -88,6 +91,20 @@ WPI_PigeonIMU gyro{6};
 //frc2::PIDController pid{0.1, 0, 0};
 double PVal = 0.1;
 
+//Auto Variables
+double LeftDriveEncValue;
+double RightDriveEncValue;
+double avgEncValue;
+
+double setpoint;
+double distError;
+double turnError;
+
+double turnPIDOutput;
+double distPIDOutput;
+
+bool timeStampChecked = true;
+
 
 //Set up motors to drive
 void LeftMotorDrive (double speed) {
@@ -100,11 +117,14 @@ void RightMotorDrive (double speed) {
   MiddleRightMotor.Set(ControlMode::PercentOutput, speed);
   BackRightMotor.Set(ControlMode::PercentOutput, speed);
 }
-void Intake (double speed) {
-  TestIntake.Set(ControlMode::PercentOutput, speed);
+void Conveyor (double speed) {
+  ConveyorMotor1.Set(ControlMode::PercentOutput, speed);
+  ConveyorMotor2.Set(ControlMode::PercentOutput, speed);
 }
 void Shooter (double speed) {
-  ShooterMotor.Set(ControlMode::PercentOutput, speed);
+  ShooterMotor1.Set(ControlMode::PercentOutput, speed);
+  ShooterMotor2.Set(ControlMode::PercentOutput, speed);
+  ConveyorMotor3.Set(ControlMode::PercentOutput, speed);
 }
 void Climb (double speed) {
   LeftClimbMotor.Set(ControlMode::PercentOutput, speed);
@@ -121,6 +141,9 @@ void Robot::RobotInit() {
   FrontLeftMotor.SetInverted(true);
   MiddleLeftMotor.SetInverted(true);
   BackLeftMotor.SetInverted(true);
+
+  ShooterMotor2.SetInverted(true);
+  ConveyorMotor2.SetInverted(true);
 
   //Drop intake down at the beginning of a match
   IntakeBar.Set(true);
@@ -181,16 +204,15 @@ void Robot::AutonomousInit() {
 void Robot::AutonomousPeriodic() {
   //553.1248 cycles of the encoder per in. ---> Multiply by # of inches to find encoder units
 
-  double LeftDriveEncValue = FrontLeftMotor.GetSelectedSensorPosition();
-  double RightDriveEncValue = FrontRightMotor.GetSelectedSensorPosition();
-  double avgEncValue = (LeftDriveEncValue + RightDriveEncValue)/2;
+  LeftDriveEncValue = FrontLeftMotor.GetSelectedSensorPosition();
+  RightDriveEncValue = FrontRightMotor.GetSelectedSensorPosition();
+  avgEncValue = (LeftDriveEncValue + RightDriveEncValue)/2;
 
-  double setpoint;
-  double distError = (setpoint - avgEncValue);
-  double turnError = (setpoint - gyro.GetAngle());
+  distError = (setpoint - avgEncValue);
+  turnError = (setpoint - gyro.GetAngle());
 
-  double turnPIDOutput = PVal * turnError;
-  double distPIDOutput = PVal * distError;
+  turnPIDOutput = PVal * turnError;
+  distPIDOutput = PVal * distError;
 
   if (turnPIDOutput > 1) {
     turnPIDOutput = 1;
@@ -200,42 +222,40 @@ void Robot::AutonomousPeriodic() {
 
   if (m_autoSelected == kAutoNameCustom) {
 
-    
     // Auto 1 - Same for all tarmacs
-    //Shooter(#);
+    Shooter(0.25);
     if (avgEncValue < 42131.516016) {
       setpoint = 42131.516016;
       
       LeftMotorDrive(distPIDOutput/5);
       RightMotorDrive(distPIDOutput/5);
-      Intake(0.2);
+      Intake.Set(ControlMode::PercentOutput, 0.25);
     }
     if (avgEncValue > 42131.516016) {
       LeftMotorDrive(-distPIDOutput/5);
       RightMotorDrive(-distPIDOutput/5);
-      Intake(0);
-    } /*else if (avgEncValue <= #) {
+      Intake.Set(ControlMode::PercentOutput, 0);
+    } else if (avgEncValue <= 3328) {
       LeftMotorDrive(0);
       RightMotorDrive(0);
-      //Shooter(#);
-    }*/
-    
+      Shooter(0.25);
+    }
     
     // Auto #2 - Blue Bottom & Red Top (locations near terminal)
-    //Shooter(#);
+    Shooter(0.25);
     if (avgEncValue < 137252.387872) {
       setpoint = 137252.387872;
       
       LeftMotorDrive(distPIDOutput/5);
       RightMotorDrive(distPIDOutput/5);
-      Intake(0.2);
+      Intake.Set(ControlMode::PercentOutput, 0.2);
     }
 
     //Auto #2 - Blue Top & Red Bottom (Locations closest to hangar)
-    //Shooter(#);
+    Shooter(0.25);
     if (gyro.GetAngle() < 112.5) {
-      RightMotorDrive(distPIDOutput/5);
-      LeftMotorDrive(-distPIDOutput/5);
+      RightMotorDrive(turnPIDOutput/5);
+      LeftMotorDrive(-turnPIDOutput/5);
      }
      else {
        LeftMotorDrive(0);
@@ -272,24 +292,38 @@ void Robot::TeleopInit() {
 
 void Robot::TeleopPeriodic() {
 
-double JoyY = -JoyStick1.GetY();
+LeftDriveEncValue = FrontLeftMotor.GetSelectedSensorPosition();
+RightDriveEncValue = FrontRightMotor.GetSelectedSensorPosition();
+avgEncValue = (LeftDriveEncValue + RightDriveEncValue)/2;
+
+double JoyY = JoyStick1.GetY();
 double WheelX = Wheel.GetX();
 
   if (WheelX > 0.1 && (JoyY > 0.05 || JoyY < -0.05)) {
-    LeftMotorDrive((JoyY)/2);
-    RightMotorDrive((JoyY)/4);
-  }
-  else if (WheelX < -0.1 && (JoyY > 0.05 || JoyY < -0.05)) {
     LeftMotorDrive((JoyY)/4);
-    RightMotorDrive(JoyY/2);
+    RightMotorDrive((JoyY)/2);
+  } /*else if(Xbox.GetRawButton(8)) {
+    if(LeftDriveEncValue > 6660) {
+      LeftMotorDrive(-0.5);
+      RightMotorDrive(-0.5);
+    }
+  }*/
+  else if (WheelX < -0.1 && (JoyY > 0.05 || JoyY < -0.05)) {
+    LeftMotorDrive((JoyY)/2);
+    RightMotorDrive(JoyY/4);
   }
   //If joystick is pushed forward or backward
   else if (JoyY > 0.1 || JoyY < -0.1) {
-    LeftMotorDrive(JoyY/2);
-    RightMotorDrive(JoyY/2);
+    LeftMotorDrive(JoyY);
+    RightMotorDrive(JoyY);
+  } else {
+    LeftMotorDrive(0);
+    RightMotorDrive(0);
   }
+
+
   //Point turning (turning in place)
-  else if (Wheel.GetRawButton(5)) {
+  if (Wheel.GetRawButton(5)) {
     if (WheelX > 0) {
       RightMotorDrive(-(WheelX * WheelX));
       LeftMotorDrive((WheelX * WheelX));
@@ -306,17 +340,24 @@ double WheelX = Wheel.GetX();
 
 
   //Intake Code (button # is subject to change)
-  if(Xbox.GetRawButton(4)) {
-    Intake(0.75);
+  if(Xbox.GetRawButton(3)) {
+    Intake.Set(ControlMode::PercentOutput, -0.85);
+    Conveyor(-0.5);
+  } else if (Xbox.GetRawButton(1)) {
+    Intake.Set(ControlMode::PercentOutput, 0.85);
+    Conveyor(0);
   }
   else {
-    Intake(0);
+    Intake.Set(ControlMode::PercentOutput, 0);
+    Conveyor(0);
   }
 
+  //Line up code
+  
   //Shooter Code
-  if(Xbox.GetRawButton(3)) {
-    Shooter(-1);
-  } 
+  if(Xbox.GetRawButton(4)) {
+    Shooter(-0.35);
+  }
   else {
     Shooter(0);
   }
@@ -357,6 +398,50 @@ steady_clock::time_point clock_begin = steady_clock::now();
 
 void Robot::TestPeriodic() {
 
+  //Auto Testing
+  LeftDriveEncValue = FrontLeftMotor.GetSelectedSensorPosition();
+  RightDriveEncValue = FrontRightMotor.GetSelectedSensorPosition();
+  avgEncValue = (LeftDriveEncValue + RightDriveEncValue)/2;
+
+  distError = (setpoint - avgEncValue);
+  turnError = (setpoint - gyro.GetAngle());
+
+  turnPIDOutput = PVal * turnError;
+  distPIDOutput = PVal * distError;
+
+  if (turnPIDOutput > 1) {
+    turnPIDOutput = 1;
+  } else if (distPIDOutput > 1) {
+    distPIDOutput = 1;
+  }
+
+  //Timer test for intake
+  steady_clock::time_point clock_end = steady_clock::now();
+  steady_clock::duration time_span = clock_end - clock_begin;
+
+  double seconds = double(time_span.count()) * steady_clock::period::num / steady_clock::period::den;
+  
+  if (avgEncValue < 42131.516016) {
+    setpoint = 42131.516016;
+      
+    LeftMotorDrive(distPIDOutput/5);
+    RightMotorDrive(distPIDOutput/5);
+    Intake.Set(ControlMode::PercentOutput, 0.25);
+  }
+  if (avgEncValue > 42131.516016) {
+    LeftMotorDrive(-distPIDOutput/5);
+    RightMotorDrive(-distPIDOutput/5);
+    Intake.Set(ControlMode::PercentOutput, 0);
+  } else if (avgEncValue <= 3328) {
+    LeftMotorDrive(0);
+    RightMotorDrive(0);
+      if (seconds < 2 && timeStampChecked) {
+        Shooter(0.25);
+      }
+    timeStampChecked = false;
+  }
+
+
   /*//Determine tolerance of gyro
   if (gyro.GetAngle() < 90) {
     setpoint = 90;
@@ -376,56 +461,21 @@ void Robot::TestPeriodic() {
 
 
   //Timer test for intake
-  steady_clock::time_point clock_end = steady_clock::now();
+  /*steady_clock::time_point clock_end = steady_clock::now();
   steady_clock::duration time_span = clock_end - clock_begin;
 
-  double seconds = double(time_span.count()) * steady_clock::period::num / steady_clock::period::den;
+  double seconds = double(time_span.count()) * steady_clock::period::num / steady_clock::period::den;*/
 
-  std::cout << "Time (seconds)" << seconds << std::endl;
+  //std::cout << "Time (seconds)" << seconds << std::endl;
 
-  if (seconds < 6) {
+  /*if (seconds < 6) {
     Intake (0.75);
   } else {
     Intake (0);
-  }
+  }*/
 
   
   //std::cout << "Gyro Angle: " << gyro.GetAngle() << std::endl;
-  
-
-  /*if ((LeftDriveEncValue + RightDriveEncValue)/2 < 12732.365) {
-      frc::SmartDashboard::PutNumber("Average Encoder Value", avgEncValue);
-      setpoint = 12732.365;
-      //LeftMotorDrive(pid.Calculate(avgEncValue, setpoint));
-      //RightMotorDrive(pid.Calculate(avgEncValue, setpoint));
-      LeftMotorDrive(0.1);
-      RightMotorDrive(0.1);
-  }
-  else {
-      LeftMotorDrive(0);
-      RightMotorDrive(0);
-  }*/
-
-  /*Command to get angle from gyro is gyro.GetAngle()
-
-  if(FrontLeftMotor.GetSelectedSensorPosition() < 75000 && FrontRightMotor.GetSelectedSensorPosition() < 75000) {
-      if (gyroAngle > 10) {
-        LeftMotorDrive(0.1/2);
-        RightMotorDrive(0.1);
-      }
-      else if (gyroAngle < -10) {
-        LeftMotorDrive(0.1);
-        RightMotorDrive(0.1/2);
-      }
-      else {
-        LeftMotorDrive(0.1);
-        RightMotorDrive(0.1);
-      }
-  }
-  else {
-    LeftMotorDrive(0);
-    RightMotorDrive(0);
-  }*/
   
 }
 
