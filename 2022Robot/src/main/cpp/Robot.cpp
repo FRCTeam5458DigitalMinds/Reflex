@@ -1,4 +1,3 @@
-
 // Copyright (c) FIRST and other WPILib contributors.
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
@@ -199,6 +198,8 @@ void Robot::AutonomousInit() {
   FrontRightMotor.SetSelectedSensorPosition(0);
   MiddleRightMotor.SetSelectedSensorPosition(0);
   BackRightMotor.SetSelectedSensorPosition(0);*/
+
+  steady_clock::time_point clock_begin = steady_clock::now();
 }
 
 void Robot::AutonomousPeriodic() {
@@ -223,48 +224,52 @@ void Robot::AutonomousPeriodic() {
   if (m_autoSelected == kAutoNameCustom) {
 
     // Auto 1 - Same for all tarmacs
-    Shooter(0.25);
     if (avgEncValue < 42131.516016) {
       setpoint = 42131.516016;
       
-      LeftMotorDrive(distPIDOutput/5);
-      RightMotorDrive(distPIDOutput/5);
-      Intake.Set(ControlMode::PercentOutput, 0.25);
-    }
-    if (avgEncValue > 42131.516016) {
       LeftMotorDrive(-distPIDOutput/5);
       RightMotorDrive(-distPIDOutput/5);
+      Intake.Set(ControlMode::PercentOutput, -0.3);
+    }
+    else if (avgEncValue > 43000) {
+      LeftMotorDrive(distPIDOutput/5);
+      RightMotorDrive(distPIDOutput/5);
+      Conveyor(0.5);
       Intake.Set(ControlMode::PercentOutput, 0);
-    } else if (avgEncValue <= 3328) {
-      LeftMotorDrive(0);
-      RightMotorDrive(0);
-      Shooter(0.25);
+    } else if (avgEncValue <= 5328) {
+        LeftMotorDrive(0);
+        RightMotorDrive(0);
+        Shooter(0.25);
+        Conveyor(0.5);
+        Intake.Set(ControlMode::PercentOutput, 0);
+      }
     }
     
-    // Auto #2 - Blue Bottom & Red Top (locations near terminal)
-    Shooter(0.25);
+    // Auto 2A - Shoot cargo then drive to the terminal and intake
+    Shooter(0.35);
+    if (gyro.GetAngle() < 31) {
+      RightMotorDrive(-turnPIDOutput/5);
+      LeftMotorDrive(turnPIDOutput/5);
+    }
     if (avgEncValue < 137252.387872) {
       setpoint = 137252.387872;
       
       LeftMotorDrive(distPIDOutput/5);
       RightMotorDrive(distPIDOutput/5);
-      Intake.Set(ControlMode::PercentOutput, 0.2);
+      Intake.Set(ControlMode::PercentOutput, 0.3);
     }
 
-    //Auto #2 - Blue Top & Red Bottom (Locations closest to hangar)
-    Shooter(0.25);
+    //Auto 2B - Shoot, then turn and drive to terminal and intake
+    Shooter(0.35);
+    //Wait a couple seconds
     if (gyro.GetAngle() < 112.5) {
       RightMotorDrive(turnPIDOutput/5);
       LeftMotorDrive(-turnPIDOutput/5);
-     }
-     else {
-       LeftMotorDrive(0);
-       RightMotorDrive(0);
-     }
-     
-    if (avgEncValue < 222991) {
+    }
+    else if (avgEncValue < 222991) {
       LeftMotorDrive(distPIDOutput/5);
       RightMotorDrive(distPIDOutput/5);
+      Intake.Set(ControlMode::PercentOutput, 0.3);
     } else {
       LeftMotorDrive(0);
       RightMotorDrive(0);
@@ -272,11 +277,10 @@ void Robot::AutonomousPeriodic() {
   
     //Auto #3 (All Tarmacs)
     if(avgEncValue < 42131.516016) {
-      LeftMotorDrive(0.2);
-      RightMotorDrive(0.2);
+      LeftMotorDrive(0.25);
+      RightMotorDrive(0.25);
   } else {
     // Default Auto goes here
-  }
   }
 }
 
@@ -299,11 +303,16 @@ avgEncValue = (LeftDriveEncValue + RightDriveEncValue)/2;
 double JoyY = JoyStick1.GetY();
 double WheelX = Wheel.GetX();
 
-  if (WheelX > 0.1 && (JoyY > 0.05 || JoyY < -0.05)) {
+  if (WheelX > 0.1 && (JoyY > 0.1 || JoyY < -0.1)) {
     LeftMotorDrive((JoyY)/4);
     RightMotorDrive((JoyY)/2);
-  } 
-  else if (WheelX < -0.1 && (JoyY > 0.05 || JoyY < -0.05)) {
+  } /*else if(Xbox.GetRawButton(8)) {
+    if(LeftDriveEncValue > 6660) {
+      LeftMotorDrive(-0.5);
+      RightMotorDrive(-0.5);
+    }
+  }*/
+  else if (WheelX < -0.1 && (JoyY > 0.1 || JoyY < -0.1)) {
     LeftMotorDrive((JoyY)/2);
     RightMotorDrive(JoyY/4);
   }
@@ -338,30 +347,21 @@ double WheelX = Wheel.GetX();
   if(Xbox.GetRawButton(3)) {
     Intake.Set(ControlMode::PercentOutput, -0.85);
     Conveyor(-0.5);
+    Shooter(0);
   } else if (Xbox.GetRawButton(1)) {
     Intake.Set(ControlMode::PercentOutput, 0.85);
     Conveyor(0);
-  }
-  else {
+    Shooter(0);
+  } else if(Xbox.GetRawButton(4)) {
+    Shooter(-0.35);
+    Conveyor(-0.5);
+    Intake.Set(ControlMode::PercentOutput, 0);
+  } else {
     Intake.Set(ControlMode::PercentOutput, 0);
     Conveyor(0);
-  }
-
-  //Line up code (robot drives backward until it is 6660 encoder units (~1 ft) away from the hub)
-  if(Xbox.GetRawButton(8)) {
-    if(avgEncValue > 6660) {
-      LeftMotorDrive(-0.5);
-      RightMotorDrive(-0.5);
-    }
-  }
-
-  //Shooter Code
-  if(Xbox.GetRawButton(4)) {
-    Shooter(-0.35);
-  }
-  else {
     Shooter(0);
   }
+  
 
   //Climb Code 
   if(Xbox.GetRawButton(5)) {
@@ -486,3 +486,4 @@ int main() {
   return frc::StartRobot<Robot>();
 }
 #endif
+
