@@ -44,7 +44,7 @@ using namespace std::chrono;
 //Declarations
 
 //Joysticks
-frc::Joystick JoyStick1(0), Wheel(2), Xbox(1);
+frc::Joystick JoyStick1(0), Wheel(3), Xbox(1);
 
 //Drive Motors
 TalonFX FrontRightMotor {15};
@@ -93,10 +93,10 @@ double turnError;
 double turnPIDOutput;
 double distPIDOutput;
 
-int autoStep;
+int autoStep = 1;
 
 bool timeStampChecked = true;
-
+bool isShooterRunning = false;
 
 //Set up motors to drive
 void LeftMotorDrive (double speed) {
@@ -130,9 +130,9 @@ void Robot::RobotInit() {
   m_chooser.AddOption(kAutoNameCustom, kAutoNameCustom);
   //frc::SmartDashboard::PutData("Auto Modes", &m_chooser);
 
-  FrontLeftMotor.SetInverted(true);
-  MiddleLeftMotor.SetInverted(true);
-  BackLeftMotor.SetInverted(true);
+  FrontRightMotor.SetInverted(true);
+  MiddleRightMotor.SetInverted(true);
+  BackRightMotor.SetInverted(true);
 
   ShooterMotor2.SetInverted(true);
   ConveyorMotor2.SetInverted(true);
@@ -158,15 +158,6 @@ void Robot::RobotInit() {
  * LiveWindow and SmartDashboard integrated updating.
  */
 void Robot::RobotPeriodic() {
-
-  //Limelight
-  auto inst = nt::NetworkTableInstance::GetDefault();
-  nt::NetworkTableInstance::GetDefault().GetTable("limelight")->GetNumber("<variablename>",0.0);
-  double targetOffsetAngle_Horizontal = nt::NetworkTableInstance::GetDefault().GetTable("limelight")->GetNumber("tx",0.0);
-  double targetOffsetAngle_Vertical = nt::NetworkTableInstance::GetDefault().GetTable("limelight")->GetNumber("ty",0.0);
-  double targetArea = nt::NetworkTableInstance::GetDefault().GetTable("limelight")->GetNumber("ta",0.0);
-  double targetSkew = nt::NetworkTableInstance::GetDefault().GetTable("limelight")->GetNumber("ts",0.0);
-
 }
 
 /**
@@ -221,32 +212,51 @@ void Robot::AutonomousPeriodic() {
     distPIDOutput = 0.25;
   }
 
-  if (LeftDriveEncValue > -36637 && RightDriveEncValue > -36637 && (autoStep == 1)) {
-      std::cout << "Encoder Value: " << FrontLeftMotor.GetSelectedSensorPosition() << std::endl;
+  if (LeftDriveEncValue < 36000 && RightDriveEncValue < 36637 && (autoStep == 1)) {
+      //std::cout << "Encoder Value: " << FrontLeftMotor.GetSelectedSensorPosition() << std::endl;
       setpoint = 6637;
       
-      LeftMotorDrive(-0.2);
-      RightMotorDrive(-0.2);
-      
-      Intake.Set(ControlMode::PercentOutput, -0.3);
-      autoStep = 1;
-  } else if (LeftDriveEncValue < -36637 && RightDriveEncValue < -36637) {
-      autoStep = 2;
-      std::cout << "Encoder Value: " << FrontLeftMotor.GetSelectedSensorPosition() << std::endl;
       LeftMotorDrive(0.2);
       RightMotorDrive(0.2);
-      Conveyor(0.5);
-      Intake.Set(ControlMode::PercentOutput, 0);
-  } /*else if (LeftDriveEncValue >= -3500 && RightDriveEncValue >= -3500 && autoStepOne) {
+      
+      Intake.Set(ControlMode::PercentOutput, -0.75);
+      autoStep = 1;
+  } else if (LeftDriveEncValue > 36000 && RightDriveEncValue > 36000) {
+      autoStep = 2;
+      std::cout << "Encoder Value: " << FrontLeftMotor.GetSelectedSensorPosition() << std::endl;
+      LeftMotorDrive(-0.2);
+      RightMotorDrive(-0.2);
+      Conveyor(-0.5);
+      Intake.Set(ControlMode::PercentOutput, -0.5);
+  } else if (LeftDriveEncValue <= 500 && RightDriveEncValue <= 500 && (autoStep >= 2)) {
       LeftMotorDrive(0);
       RightMotorDrive(0);
-      Shooter(0.25);
-      Conveyor(0.5);
+      Shooter(-0.4);
+      Conveyor(-0.75);
+      steady_clock::time_point clock_begin = steady_clock::now();
       Intake.Set(ControlMode::PercentOutput, 0);
-  } */else {
-    //LeftMotorDrive(0);
-    //RightMotorDrive(0);
-  }
+      isShooterRunning = true;
+  } else if (autoStep >= 3) {
+      //Turn 70 degrees
+      if (gyro.GetAngle() < 70) {
+        RightMotorDrive(-0.5);
+        LeftMotorDrive(0.5);
+      } else if (LeftDriveEncValue < 145000 && RightDriveEncValue < 165000 && autoStep == 3) {
+        LeftMotorDrive(0.5);
+        RightMotorDrive(0.5);
+        Intake.Set(ControlMode::PercentOutput, -0.75);
+      } else if (LeftDriveEncValue > 145000 && RightDriveEncValue > 165000) {
+        LeftMotorDrive(-0.5);
+        RightMotorDrive(-0.5);
+        Conveyor(0.5);
+        autoStep = 4;
+      } else if (LeftDriveEncValue <= 500 && RightDriveEncValue <= 500 && autoStep == 4) {
+        LeftMotorDrive(0);
+        RightMotorDrive(0);
+        Shooter(0.4);
+        Conveyor(0.5);
+      }
+  } 
 
   /*if (avgEncValue < 42131.516016) {
     std::cout << "Auto step 1" << std::endl;
@@ -273,32 +283,8 @@ void Robot::AutonomousPeriodic() {
       Intake.Set(ControlMode::PercentOutput, 0);
   }*/
 
-  if (m_autoSelected == kAutoNameCustom) {
-
     /*
-    // Auto 1 - Same for all tarmacs
-    if (avgEncValue < 42131.516016) {
-      setpoint = 42131.516016;
-      
-      LeftMotorDrive(-distPIDOutput/5);
-      RightMotorDrive(-distPIDOutput/5);
-      Intake.Set(ControlMode::PercentOutput, -0.3);
-    }
-    else if (avgEncValue > 43000) {
-      LeftMotorDrive(distPIDOutput/5);
-      RightMotorDrive(distPIDOutput/5);
-      Conveyor(0.5);
-      Intake.Set(ControlMode::PercentOutput, 0);
-    } else if (avgEncValue <= 5328) {
-        LeftMotorDrive(0);
-        RightMotorDrive(0);
-        Shooter(0.25);
-        Conveyor(0.5);
-        Intake.Set(ControlMode::PercentOutput, 0);
-      }
-    }
-    
-    // Auto 2A - Shoot cargo then drive to the terminal and intake
+    //Auto 2A - Shoot cargo then drive to the terminal and intake
     Shooter(0.35);
     if (gyro.GetAngle() < 31) {
       RightMotorDrive(-turnPIDOutput/5);
@@ -332,13 +318,21 @@ void Robot::AutonomousPeriodic() {
     if(avgEncValue < 42131.516016) {
       LeftMotorDrive(0.25);
       RightMotorDrive(0.25);*/
+  if (m_autoSelected == kAutoNameCustom) {
+    // Custom Auto goes here
   } else {
     // Default Auto goes here
   }
 }
 
 void Robot::TeleopInit() {
-  
+  FrontRightMotor.SetInverted(true);
+  MiddleRightMotor.SetInverted(true);
+  BackRightMotor.SetInverted(true);
+
+  ShooterMotor2.SetInverted(true);
+  ConveyorMotor2.SetInverted(true);
+
 }
 
 void Robot::TeleopPeriodic() {
@@ -347,48 +341,31 @@ LeftDriveEncValue = FrontLeftMotor.GetSelectedSensorPosition();
 RightDriveEncValue = FrontRightMotor.GetSelectedSensorPosition();
 avgEncValue = (LeftDriveEncValue + RightDriveEncValue)/2;
 
-double JoyY = JoyStick1.GetY();
+double JoyY = -JoyStick1.GetY();
 double WheelX = Wheel.GetX();
 
   if (WheelX > 0.1 && (JoyY > 0.1 || JoyY < -0.1)) {
-    LeftMotorDrive((JoyY)/4);
-    RightMotorDrive((JoyY)/2);
-  } /*else if(Xbox.GetRawButton(8)) {
-    if(LeftDriveEncValue > 6660) {
-      LeftMotorDrive(-0.5);
-      RightMotorDrive(-0.5);
-    }
-  }*/
-  else if (WheelX < -0.1 && (JoyY > 0.1 || JoyY < -0.1)) {
     LeftMotorDrive((JoyY)/2);
-    RightMotorDrive(JoyY/4);
-  }
-  //If joystick is pushed forward or backward
-  else if (JoyY > 0.1 || JoyY < -0.1) {
+    RightMotorDrive((JoyY)/4);
+  } else if (JoyY > 0.1 || JoyY < -0.1) {
     LeftMotorDrive(JoyY);
-    //RightMotorDrive(JoyY);
-
+    RightMotorDrive(JoyY);
+  } else if (WheelX < -0.1 && (JoyY > 0.1 || JoyY < -0.1)) {
+    LeftMotorDrive((JoyY)/4);
+    RightMotorDrive(JoyY/2);
+  } // Point turning
+    else if (Wheel.GetRawButton(5)) {
+    if (WheelX > 0) {
+      RightMotorDrive((WheelX * WheelX));
+      LeftMotorDrive(-(WheelX * WheelX));
+    } else if (WheelX < 0) {
+      RightMotorDrive(-(WheelX * WheelX));
+      LeftMotorDrive((WheelX * WheelX));
+    }
   } else {
     LeftMotorDrive(0);
     RightMotorDrive(0);
-  }
-
-
-  //Point turning (turning in place)
-  if (Wheel.GetRawButton(5)) {
-    if (WheelX > 0) {
-      RightMotorDrive(-(WheelX * WheelX));
-      LeftMotorDrive((WheelX * WheelX));
-    } else if (WheelX < 0) {
-      RightMotorDrive((WheelX * WheelX));
-      LeftMotorDrive(-(WheelX * WheelX));
-    }
   } 
-  //Regular turning while driving
-  else {
-    LeftMotorDrive(0);
-    RightMotorDrive(0);
-  }
 
 
   //Intake Code (button X to intake & run conveyor, button A to spit) & Shooter+Conveyor Code (button Y)
@@ -432,8 +409,8 @@ void Robot::DisabledInit() {}
 void Robot::DisabledPeriodic() {}
 
 void Robot::TestInit() {
-  //FrontLeftMotor.SetSelectedSensorPosition(0);
-  //MiddleLeftMotor.SetSelectedSensorPosition(0);
+  FrontLeftMotor.SetSelectedSensorPosition(0);
+  MiddleLeftMotor.SetSelectedSensorPosition(0);
   BackLeftMotor.SetSelectedSensorPosition(0);
 
   FrontRightMotor.SetSelectedSensorPosition(0);
@@ -442,18 +419,25 @@ void Robot::TestInit() {
 
   gyro.Reset();
   gyro.Calibrate();
-
-  
 }
-
-steady_clock::time_point clock_begin = steady_clock::now();
 
 void Robot::TestPeriodic() {
 
-  LeftMotorDrive(0.1);
-  RightMotorDrive(0.1);
+  double JoyY = -JoyStick1.GetY();
 
-  std::cout << "LeftBack Motor Power Output" << BackLeftMotor.GetMotorOutputPercent() <<std::endl;
+  if (JoyY > 0.1 || JoyY < -0.1) {
+    LeftMotorDrive(JoyY);
+    RightMotorDrive(JoyY);
+  }
+
+  /*else if(Xbox.GetRawButton(8)) {
+    if(LeftDriveEncValue > 6660) {
+      LeftMotorDrive(-0.5);
+      RightMotorDrive(-0.5);
+    }
+  }*/
+
+
   /*Auto Testing
   //LeftDriveEncValue = FrontLeftMotor.GetSelectedSensorPosition();
   RightDriveEncValue = FrontRightMotor.GetSelectedSensorPosition();
