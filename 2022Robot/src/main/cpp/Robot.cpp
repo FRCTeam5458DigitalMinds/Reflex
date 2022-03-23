@@ -2,7 +2,7 @@
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
 // O_o
-#include "cameraserver/CameraServer.h"
+
 #include "Robot.h"
 #include <fmt/core.h>
 #include <frc/smartdashboard/SmartDashboard.h>
@@ -23,7 +23,6 @@
 #include <frc/PneumaticsBase.h>
 #include <frc/CompressorConfigType.h>
 #include <WPILibVersion.h>
-#include <frc/controller/PIDController.h>
 #include <cmath>
 #include <math.h>
 #include "frc/smartdashboard/Smartdashboard.h"
@@ -33,8 +32,6 @@
 #include "networktables/NetworkTableValue.h"
 #include "wpi/span.h"
 #include "cameraserver/CameraServer.h"
-#include "networktables/NetworkTableEntry.inc"
-#include "networktables/NetworkTableInstance.inc"
 #include <chrono>
 #include <ctime>
 #include <ratio>
@@ -435,57 +432,11 @@ void Robot::TestInit() {
 }
 
 void Robot::TestPeriodic() {
-
-  double JoyY = -JoyStick1.GetY();
-
-  if (JoyY > 0.1 || JoyY < -0.1) {
-    LeftMotorDrive(JoyY);
-    RightMotorDrive(JoyY);
-  }
-
   /*else if(Xbox.GetRawButton(8)) {
     if(LeftDriveEncValue > 6660) {
       LeftMotorDrive(-0.5);
       RightMotorDrive(-0.5);
     }
-  }*/
-
-
-  /*Auto Testing
-  //LeftDriveEncValue = FrontLeftMotor.GetSelectedSensorPosition();
-  RightDriveEncValue = FrontRightMotor.GetSelectedSensorPosition();
-  avgEncValue = (LeftDriveEncValue + RightDriveEncValue)/2;
-
-  distError = (setpoint - avgEncValue);
-  turnError = (setpoint - gyro.GetAngle());
-
-  turnPIDOutput = PVal * turnError;
-  distPIDOutput = PVal * distError;
-
-  if (turnPIDOutput > 1) {
-    turnPIDOutput = 1;
-  } else if (distPIDOutput > 1) {
-    distPIDOutput = 1;
-  }
-
-  if (avgEncValue < 42131.516016) {
-      setpoint = 42131.516016;
-      
-      LeftMotorDrive(-distPIDOutput/10);
-      RightMotorDrive(-distPIDOutput/10);
-      Intake.Set(ControlMode::PercentOutput, -0.3);
-  }
-  else if (avgEncValue > 43000) {
-      LeftMotorDrive(distPIDOutput/10);
-      RightMotorDrive(distPIDOutput/10);
-      Conveyor(0.5);
-      Intake.Set(ControlMode::PercentOutput, 0);
-  } else if (avgEncValue <= 5328) {
-      LeftMotorDrive(0);
-      RightMotorDrive(0);
-      Shooter(0.25);
-      Conveyor(0.5);
-      Intake.Set(ControlMode::PercentOutput, 0);
   }*/
 
 
