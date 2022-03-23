@@ -2,6 +2,7 @@
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
 // O_o
+#include "cameraserver/CameraServer.h"
 #include "Robot.h"
 #include <fmt/core.h>
 #include <frc/smartdashboard/SmartDashboard.h>
@@ -57,11 +58,12 @@ TalonFX BackLeftMotor {3};
 
 //Intake Motors
 VictorSPX Intake {5};
+VictorSPX IntakeMotor2 {8};
 
 //Shooter Motors
 VictorSPX ConveyorMotor1 {4};
 VictorSPX ConveyorMotor3 {7};
-VictorSPX ConveyorMotor2 {8};
+
 TalonFX ShooterMotor1 {10};
 TalonFX ShooterMotor2 {9};
 
@@ -109,9 +111,12 @@ void RightMotorDrive (double speed) {
   MiddleRightMotor.Set(ControlMode::PercentOutput, speed);
   BackRightMotor.Set(ControlMode::PercentOutput, speed);
 }
+void IntakeMotors (double speed) {
+  Intake.Set(ControlMode::PercentOutput, speed);
+  IntakeMotor2.Set(ControlMode::PercentOutput, speed);
+}
 void Conveyor (double speed) {
   ConveyorMotor1.Set(ControlMode::PercentOutput, speed);
-  ConveyorMotor2.Set(ControlMode::PercentOutput, speed);
 }
 void Shooter (double speed) {
   ShooterMotor1.Set(ControlMode::PercentOutput, speed);
@@ -126,6 +131,9 @@ void Climb (double speed) {
 
 //Initializing robot & variables
 void Robot::RobotInit() {
+  //camera
+  frc::CameraServer::GetInstance()->StartAutomaticCapture(0);
+  //camera end
   m_chooser.SetDefaultOption(kAutoNameDefault, kAutoNameDefault);
   m_chooser.AddOption(kAutoNameCustom, kAutoNameCustom);
   //frc::SmartDashboard::PutData("Auto Modes", &m_chooser);
@@ -135,7 +143,7 @@ void Robot::RobotInit() {
   BackRightMotor.SetInverted(true);
 
   ShooterMotor2.SetInverted(true);
-  ConveyorMotor2.SetInverted(true);
+  IntakeMotor2.SetInverted(true);
 
   //Drop intake down at the beginning of a match
   IntakeBar.Set(true);
@@ -147,6 +155,9 @@ void Robot::RobotInit() {
   FrontRightMotor.SetSelectedSensorPosition(0);
   MiddleRightMotor.SetSelectedSensorPosition(0);
   BackRightMotor.SetSelectedSensorPosition(0);
+
+  LeftClimbMotor.SetSelectedSensorPosition(0);
+  RightClimbMotor.SetSelectedSensorPosition(0);
 }
 
 /**
@@ -197,6 +208,7 @@ void Robot::AutonomousInit() {
 void Robot::AutonomousPeriodic() {
   //553.1248 cycles of the encoder per in. ---> Multiply by # of inches to find encoder units
 
+  //Next steps: fixing driftin
   LeftDriveEncValue = FrontLeftMotor.GetSelectedSensorPosition();
   RightDriveEncValue = FrontRightMotor.GetSelectedSensorPosition();
 
@@ -227,13 +239,13 @@ void Robot::AutonomousPeriodic() {
       LeftMotorDrive(-0.2);
       RightMotorDrive(-0.2);
       Conveyor(-0.5);
-      Intake.Set(ControlMode::PercentOutput, -0.5);
+      IntakeMotors(-0.5);
   } else if (LeftDriveEncValue <= 500 && RightDriveEncValue <= 500 && (autoStep >= 2)) {
       LeftMotorDrive(0);
       RightMotorDrive(0);
       Shooter(-0.4);
       Conveyor(-0.75);
-      Intake.Set(ControlMode::PercentOutput, 0);
+      IntakeMotors(0);
   } /*else if (autoStep >= 3) {
       //Turn 70 degrees
       if (gyro.GetAngle() < 70) {
@@ -328,7 +340,7 @@ void Robot::TeleopInit() {
   BackRightMotor.SetInverted(true);*/
 
   ShooterMotor2.SetInverted(true);
-  ConveyorMotor2.SetInverted(true);
+  IntakeMotor2.SetInverted(true);
 
 }
 
@@ -367,27 +379,33 @@ double WheelX = Wheel.GetX();
 
   //Intake Code (button X to intake & run conveyor, button A to spit) & Shooter+Conveyor Code (button Y)
   if(Xbox.GetRawButton(3)) {
-    Intake.Set(ControlMode::PercentOutput, -0.95);
+    IntakeMotors(-0.95);
     Conveyor(-0.2);
     Shooter(0);
   } else if (Xbox.GetRawButton(1)) {
-    Intake.Set(ControlMode::PercentOutput, 0.95);
+    IntakeMotors(0.95);
     Conveyor(0.5);
+    Shooter(0);
+  } else if (Xbox.GetRawButton(2)) {
+    Conveyor(-0.65);
+    IntakeMotors(0);
     Shooter(0);
   } else if(Xbox.GetRawButton(4)) {
     Shooter(-0.4);
     Conveyor(-0.5);
-    Intake.Set(ControlMode::PercentOutput, 0);
+    IntakeMotors(0);
   } else {
-    Intake.Set(ControlMode::PercentOutput, 0);
+    IntakeMotors(0);
     Conveyor(0);
     Shooter(0);
   }
   
 
   //Climb Code (Left Button brings climber up, Right button brings climber down)
-  if(Xbox.GetRawButton(5)) {
+  if(Xbox.GetRawButtonPressed(5)) {
     Climb (0.35);
+    std::cout << "Left Climb Encoder Value" << LeftClimbMotor.GetSelectedSensorPosition() << std::endl;
+    std::cout << "Right Climb Encoder Value" << RightClimbMotor.GetSelectedSensorPosition() << std::endl;
   } else if(Xbox.GetRawButton(6)) {
     Climb (-0.35);
   } else {
