@@ -212,7 +212,7 @@ void Robot::AutonomousPeriodic() {
     distPIDOutput = 0.25;
   }
 
-  if (LeftDriveEncValue < 36000 && RightDriveEncValue < 36637 && (autoStep == 1)) {
+  if (LeftDriveEncValue < 36000 && RightDriveEncValue < 36000 && (autoStep == 1)) {
       //std::cout << "Encoder Value: " << FrontLeftMotor.GetSelectedSensorPosition() << std::endl;
       setpoint = 6637;
       
@@ -233,10 +233,8 @@ void Robot::AutonomousPeriodic() {
       RightMotorDrive(0);
       Shooter(-0.4);
       Conveyor(-0.75);
-      steady_clock::time_point clock_begin = steady_clock::now();
       Intake.Set(ControlMode::PercentOutput, 0);
-      isShooterRunning = true;
-  } else if (autoStep >= 3) {
+  } /*else if (autoStep >= 3) {
       //Turn 70 degrees
       if (gyro.GetAngle() < 70) {
         RightMotorDrive(-0.5);
@@ -250,13 +248,12 @@ void Robot::AutonomousPeriodic() {
         RightMotorDrive(-0.5);
         Conveyor(0.5);
         autoStep = 4;
-      } else if (LeftDriveEncValue <= 500 && RightDriveEncValue <= 500 && autoStep == 4) {
+      } else {
         LeftMotorDrive(0);
         RightMotorDrive(0);
-        Shooter(0.4);
-        Conveyor(0.5);
+        Intake.Set(ControlMode::PercentOutput, 0);
       }
-  } 
+  } */
 
   /*if (avgEncValue < 42131.516016) {
     std::cout << "Auto step 1" << std::endl;
@@ -326,9 +323,9 @@ void Robot::AutonomousPeriodic() {
 }
 
 void Robot::TeleopInit() {
-  FrontRightMotor.SetInverted(true);
+  /*FrontRightMotor.SetInverted(true);
   MiddleRightMotor.SetInverted(true);
-  BackRightMotor.SetInverted(true);
+  BackRightMotor.SetInverted(true);*/
 
   ShooterMotor2.SetInverted(true);
   ConveyorMotor2.SetInverted(true);
@@ -345,11 +342,11 @@ double JoyY = -JoyStick1.GetY();
 double WheelX = Wheel.GetX();
 
   if (WheelX > 0.1 && (JoyY > 0.1 || JoyY < -0.1)) {
-    LeftMotorDrive((JoyY)/2);
-    RightMotorDrive((JoyY)/4);
+    LeftMotorDrive((JoyY)/4);
+    RightMotorDrive((JoyY)/2);
   } else if (JoyY > 0.1 || JoyY < -0.1) {
-    LeftMotorDrive(JoyY);
-    RightMotorDrive(JoyY);
+    LeftMotorDrive(JoyY/(1.5));
+    RightMotorDrive(JoyY/(1.5));
   } else if (WheelX < -0.1 && (JoyY > 0.1 || JoyY < -0.1)) {
     LeftMotorDrive((JoyY)/4);
     RightMotorDrive(JoyY/2);
@@ -370,15 +367,15 @@ double WheelX = Wheel.GetX();
 
   //Intake Code (button X to intake & run conveyor, button A to spit) & Shooter+Conveyor Code (button Y)
   if(Xbox.GetRawButton(3)) {
-    Intake.Set(ControlMode::PercentOutput, -0.85);
-    Conveyor(-0.5);
+    Intake.Set(ControlMode::PercentOutput, -0.95);
+    Conveyor(-0.2);
     Shooter(0);
   } else if (Xbox.GetRawButton(1)) {
-    Intake.Set(ControlMode::PercentOutput, 0.85);
-    Conveyor(0);
+    Intake.Set(ControlMode::PercentOutput, 0.95);
+    Conveyor(0.5);
     Shooter(0);
   } else if(Xbox.GetRawButton(4)) {
-    Shooter(-0.35);
+    Shooter(-0.4);
     Conveyor(-0.5);
     Intake.Set(ControlMode::PercentOutput, 0);
   } else {
