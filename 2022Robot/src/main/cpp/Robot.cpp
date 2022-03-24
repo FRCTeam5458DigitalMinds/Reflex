@@ -155,6 +155,8 @@ void Robot::RobotInit() {
 
   LeftClimbMotor.SetSelectedSensorPosition(0);
   RightClimbMotor.SetSelectedSensorPosition(0);
+
+  autoStep = 1;
 }
 
 /**
@@ -205,6 +207,7 @@ void Robot::AutonomousInit() {
 void Robot::AutonomousPeriodic() {
   //553.1248 cycles of the encoder per in. ---> Multiply by # of inches to find encoder units
 
+  std::cout << "Auto Step: " << autoStep << std::endl;
   //Next steps: fixing drifting
   LeftDriveEncValue = FrontLeftMotor.GetSelectedSensorPosition();
   RightDriveEncValue = FrontRightMotor.GetSelectedSensorPosition();
@@ -232,7 +235,7 @@ void Robot::AutonomousPeriodic() {
       autoStep = 1;
   } else if (LeftDriveEncValue > 36000 && RightDriveEncValue > 36000) {
       autoStep = 2;
-      std::cout << "Encoder Value: " << FrontLeftMotor.GetSelectedSensorPosition() << std::endl;
+      
       LeftMotorDrive(-0.2);
       RightMotorDrive(-0.2);
       Conveyor(-0.5);
@@ -244,12 +247,14 @@ void Robot::AutonomousPeriodic() {
       Conveyor(-0.75);
       IntakeMotors(0);
       autoStep = 3;
+      //std::cout << "Shooter Encoder Value: " << ShooterMotor1.GetSelectedSensorPosition() << std::endl;
    /* if (ShooterMotor1.GetSelectedSensorPosition() > # && ShooterMotor2.GetSelectedSensorPosition() > #) {
         //Turn 70 degrees
         if (gyro.GetAngle() < 70) {
           RightMotorDrive(0.35);
           LeftMotorDrive(-0.35);
-        } else if (LeftDriveEncValue < 165000 && RightDriveEncValue < 165000 && autoStep == 3) {
+          autoStep = 4;
+        } else if (LeftDriveEncValue < 165000 && RightDriveEncValue < 165000 && autoStep == 4) {
           LeftMotorDrive(0.25);
           RightMotorDrive(0.25);
           Intake.Set(ControlMode::PercentOutput, -0.75);
@@ -352,8 +357,8 @@ double WheelX = Wheel.GetX();
     LeftMotorDrive((JoyY)/4);
     RightMotorDrive((JoyY)/2);
   } else if (JoyY > 0.1 || JoyY < -0.1) {
-    LeftMotorDrive(JoyY/(1.5));
-    RightMotorDrive(JoyY/(1.5));
+    LeftMotorDrive(JoyY);
+    RightMotorDrive(JoyY);
   } else if (WheelX < -0.1 && (JoyY > 0.1 || JoyY < -0.1)) {
     LeftMotorDrive((JoyY)/4);
     RightMotorDrive(JoyY/2);
@@ -386,7 +391,7 @@ double WheelX = Wheel.GetX();
     IntakeMotors(0);
     Shooter(0);
   } else if(Xbox.GetRawButton(4)) {
-    Shooter(-0.4);
+    Shooter(-0.3);
     Conveyor(-0.5);
     IntakeMotors(0);
   } else {
@@ -399,8 +404,6 @@ double WheelX = Wheel.GetX();
   //Climb Code (Left Button brings climber up, Right button brings climber down)
   if(Xbox.GetRawButton(5)) {
     Climb (0.35);
-    std::cout << "Left Climb Encoder Value" << LeftClimbMotor.GetSelectedSensorPosition() << std::endl;
-    std::cout << "Right Climb Encoder Value" << RightClimbMotor.GetSelectedSensorPosition() << std::endl;
   } else if(Xbox.GetRawButton(6)) {
     Climb (-0.35);
   } else {
