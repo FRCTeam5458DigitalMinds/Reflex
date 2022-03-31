@@ -1,15 +1,22 @@
 // Copyright (c) FIRST and other WPILib contributors.
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
-// O_o
+// O_o hello is 
 
+//Include header files
 #include "Robot.h"
+#include "RobotContainer.h"
+#include "ScoreOne.h"
+#include "Taxi.h"
+#include "mainAuto.h"
+
 #include <fmt/core.h>
 #include <frc/smartdashboard/SmartDashboard.h>
 #include <string>
 #include <sstream>
 #include <iostream>
 #include <ctre/Phoenix.h>
+#include <ctre/phoenix/motorcontrol/can/TalonFX.h>
 #include <frc/Timer.h>
 #include <frc/TimedRobot.h>
 #include <frc/PowerDistribution.h>
@@ -39,6 +46,10 @@
 #include <ctime>
 #include <ratio>
 
+#include <frc2/command/ConditionalCommand.h>
+#include <ctre/phoenix/motorcontrol/SupplyCurrentLimitConfiguration.h>
+
+
 using namespace std::chrono;
 
 
@@ -58,20 +69,26 @@ TalonFX BackLeftMotor {3};
 
 //Intake Motors
 VictorSPX Intake {5};
-VictorSPX IntakeMotor2 {8};
 
 //Shooter Motors
 VictorSPX ConveyorMotor1 {4};
 VictorSPX ConveyorMotor3 {7};
 
 TalonFX ShooterMotor1 {10};
+
 TalonFX ShooterMotor2 {9};
+// Closest to intake
 
 //Climb Motors
-TalonFX LeftClimbMotor {12};
-TalonFX RightClimbMotor {11};
+TalonFX LeftClimbMotor {7};
+TalonFX RightClimbMotor {8};
 
-float turnFact = 0.9;
+//set amp limit
+bool enable = true;
+double currentLimit = 60;
+double triggerThresholdCurrent = 5;
+double triggerThresholdTime = 5;
+double turnFact = 0.9;
 
 //Pneumatics
 // frc::Compressor pcmCompressor{0, frc::PneumaticsModuleType::CTREPCM};
@@ -115,7 +132,6 @@ void RightMotorDrive (double speed) {
 }
 void IntakeMotors (double speed) {
   Intake.Set(ControlMode::PercentOutput, speed);
-  IntakeMotor2.Set(ControlMode::PercentOutput, speed);
 }
 void Conveyor (double speed) {
   ConveyorMotor1.Set(ControlMode::PercentOutput, speed);
@@ -131,29 +147,26 @@ void Climb (double speed) {
 }
 
 //Auto Selector
-enum autoMode { mainAuto, Taxi, Score1 };
-frc::SendableChooser<autoMode> m_chooser;
-
+frc::SendableChooser<frc2::Command*>m_chooser;
 
 //Initializing robot & variables
 void Robot::RobotInit() {
   //camera
   frc::CameraServer::GetInstance()->StartAutomaticCapture();
 
-  /*
-  m_chooser.AddOption("mainAuto", autoMode::mainAuto);
-  m_chooser.AddOption("Score1", autoMode::Score1);
-  m_chooser.AddOption("Taxi", autoMode::Taxi);
-  m_chooser.SetDefaultOption("mainAuto", autoMode::mainAuto);
-  frc::SmartDashboard::PutData("Play", &m_chooser);*/
-  //frc::SmartDashboard::PutData("Auto Modes", &m_chooser);
+  frc::SmartDashboard::PutData(&m_chooser);
+  // The chooser for the autonomous routines
+  
+  //frc::SmartDashboard::PutData("Auto Mode", &autoMode);
+  //m_chooser.SetDefaultOption("mainAuto", autoMode::mainAuto);
+  //frc::SmartDashboard::PutData("Play", &m_chooser);
+  
 
   FrontRightMotor.SetInverted(true);
   MiddleRightMotor.SetInverted(true);
   BackRightMotor.SetInverted(true);
 
   ShooterMotor2.SetInverted(true);
-  IntakeMotor2.SetInverted(true);
 
   //Drop intake down at the beginning of a match
   // IntakeBar.Set(false);
@@ -171,6 +184,8 @@ void Robot::RobotInit() {
 
   clock_begin = steady_clock::now();
   
+  //amp change
+  SupplyCurrentLimitConfiguration (enable, currentLimit, triggerThresholdCurrent, triggerThresholdTime);
 }
 
 /**
@@ -181,8 +196,8 @@ void Robot::RobotInit() {
  * <p> This runs after the mode specific periodic functions, but before
  * LiveWindow and SmartDashboard integrated updating.
  */
-void Robot::RobotPeriodic() {
-}
+/*void Robot::RobotPeriodic() {
+}*/
 
 /**
  * This autonomous (alon)g with the chooser code above) shows how to select
@@ -226,16 +241,15 @@ void Robot::AutonomousInit() {
 
   gyro.Reset();
 
+  m_autonomousCommand = m_container.GetAutonomousCommand();
   
-
-  if (m_autoSelected == kAutoNameCustom) {
-    // Custom Auto goes here
-  } else {
-    // Default Auto goes here
+  if (m_autonomousCommand != nullptr) {
+    m_autonomousCommand->Schedule();
   }
+  
+  frc2::CommandScheduler::GetInstance().Run();
 
 }
-
 
 
 void Robot::AutonomousPeriodic() {
@@ -311,7 +325,7 @@ void Robot::AutonomousPeriodic() {
       }*/
 
   
-  //Auto - Shoot One + Taxi
+  /*Auto - Shoot One + Taxi
   if (seconds < 13) {
     std::cout << "Less than 13 s" << std::endl;
     Shooter(-0.35);
@@ -329,7 +343,7 @@ void Robot::AutonomousPeriodic() {
     Conveyor(0);
     LeftMotorDrive(0);
     RightMotorDrive(0);
-  }
+  }*/
 
     /*
     //Auto 2A - Shoot cargo then drive to the terminal and intake
@@ -366,11 +380,6 @@ void Robot::AutonomousPeriodic() {
     if(avgEncValue < 42131.516016) {
       LeftMotorDrive(0.25);
       RightMotorDrive(0.25);*/
-  if (m_autoSelected == kAutoNameCustom) {
-    // Custom Auto goes here
-  } else {
-    // Default Auto goes here
-  }
 }
 
 void Robot::TeleopInit() {
@@ -379,7 +388,6 @@ void Robot::TeleopInit() {
   BackRightMotor.SetInverted(true);*/
 
   ShooterMotor2.SetInverted(true);
-  IntakeMotor2.SetInverted(true);
 
 }
 
@@ -522,3 +530,7 @@ int main() {
 }
 #endif
 
+// arc turning possible code
+ // double Joystick1 = -JoyStick1.wpilib_joystick()->GetRawAxis(1);
+ // double wheel = -Wheel_.wpilib_joystick()->GetRawAxis(0);
+ // bool quickturn = quickturn_->is_pressed();
