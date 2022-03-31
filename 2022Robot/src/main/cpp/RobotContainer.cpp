@@ -16,36 +16,18 @@
 #include <frc/Timer.h>
 #include <frc/TimedRobot.h>
 #include <frc/PowerDistribution.h>
-#include <frc/Joystick.h>
-#include <frc/ADXRS450_Gyro.h>
-#include <frc/AnalogGyro.h>
-#include <frc/Solenoid.h>
-#include <frc/Compressor.h>
-#include <frc/PneumaticsControlModule.h>
-#include <frc/PneumaticsModuleType.h>
-#include <frc/PneumaticsBase.h>
-#include <frc/CompressorConfigType.h>
-#include <WPILibVersion.h>
-#include <cmath>
-#include <math.h>
+
 #include "frc/smartdashboard/Smartdashboard.h"
 #include <frc/smartdashboard/SendableChooser.h>
-#include <frc/shuffleboard/Shuffleboard.h>
-#include <frc/shuffleboard/ShuffleboardTab.h>
-#include "networktables/NetworkTable.h"
-#include "networktables/NetworkTableInstance.h"
-#include "networktables/NetworkTableEntry.h"
-#include "networktables/NetworkTableValue.h"
-#include "wpi/span.h"
-#include "cameraserver/CameraServer.h"
-#include <chrono>
-#include <ctime>
-#include <ratio>
-#include <ctre/phoenix/motorcontrol/SupplyCurrentLimitConfiguration.h>
+
 #include <frc2/command/ConditionalCommand.h>
+#include "RobotContainer.h"
+
+#include <frc/shuffleboard/Shuffleboard.h>
+#include <frc2/command/button/JoystickButton.h>
 
 
-RobotContainer::RobotContainer() {
+void RobotContainer::testRobotContainer() {
   // Initialize all of your commands and subsystems here
 
   // Add commands to the autonomous command chooser

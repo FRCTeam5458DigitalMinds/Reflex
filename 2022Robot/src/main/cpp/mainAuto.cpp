@@ -2,7 +2,6 @@
 #include "mainAuto.h"
 
 #include <frc/shuffleboard/Shuffleboard.h>
-#include "Robot.h"
 #include <fmt/core.h>
 #include <frc/smartdashboard/SmartDashboard.h>
 #include <string>
@@ -13,7 +12,6 @@
 #include <frc/Timer.h>
 #include <frc/TimedRobot.h>
 #include <frc/PowerDistribution.h>
-#include <frc/Joystick.h>
 #include <frc/ADXRS450_Gyro.h>
 #include <frc/AnalogGyro.h>
 #include <frc/Solenoid.h>
@@ -90,7 +88,7 @@ void Shooter (double speed) {
 }
 
 
-mainAuto::mainAuto() {
+void mainAuto::mainMainAuto() {
   double LeftDriveEncValue = FrontLeftMotor.GetSelectedSensorPosition();
   double RightDriveEncValue = FrontRightMotor.GetSelectedSensorPosition();
   
@@ -138,4 +136,11 @@ mainAuto::mainAuto() {
           Intake.Set(ControlMode::PercentOutput, 0);
         }
    }
+}
+
+int main() {
+  mainAuto testMainAuto;     // Create an object of MyClass
+  testMainAuto.mainMainAuto();
+
+  return 0;
 }

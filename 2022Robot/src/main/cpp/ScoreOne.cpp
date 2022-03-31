@@ -40,6 +40,8 @@
 #include <ctre/phoenix/motorcontrol/SupplyCurrentLimitConfiguration.h>
 #include <frc2/command/ConditionalCommand.h>
 
+using namespace std::chrono;
+
 //Drive Motors
 TalonFX FrontRightMotor {15};
 TalonFX MiddleRightMotor {14};
@@ -91,8 +93,7 @@ void Shooter (double speed) {
   ConveyorMotor3.Set(ControlMode::PercentOutput, speed);
 }
 
-ScoreOne::ScoreOne() {
-  
+void ScoreOne::ScoreOneAuto() {
   //ScoreOne Auto
   steady_clock::time_point clock_end = steady_clock::now();
   steady_clock::duration time_span = clock_end - clock_begin;
@@ -118,3 +119,11 @@ ScoreOne::ScoreOne() {
     RightMotorDrive(0);
   }
 }
+
+int main() {
+  ScoreOne testAuto;     // Create an object of MyClass
+  testAuto.ScoreOneAuto();
+
+  return 0;
+}
+

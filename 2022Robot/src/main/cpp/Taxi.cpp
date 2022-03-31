@@ -66,7 +66,7 @@ WPI_PigeonIMU gyro{6};
 int autoStep = 1;
 
 
-steady_clock::time_point clock_begin;
+//steady_clock::time_point clock_begin;
 
 //Set up motors to drive
 void LeftMotorDrive (double speed) {
@@ -91,10 +91,20 @@ void Shooter (double speed) {
   ConveyorMotor3.Set(ControlMode::PercentOutput, speed);
 }
 
-Taxi::Taxi() {
+void Taxi::taxiAuto() {
   //Taxi Auto
   if(FrontLeftMotor.GetSelectedSensorPosition() < 42131.516016 && FrontRightMotor.GetSelectedSensorPosition() < 52131.516016) {
       LeftMotorDrive(0.25);
       RightMotorDrive(0.25);
+  } else {
+    LeftMotorDrive(0);
+    RightMotorDrive(0);
   }
+}
+
+int main() {
+  Taxi testTaxiAuto;     // Create an object of MyClass
+  testTaxiAuto.taxiAuto();
+
+  return 0;
 }

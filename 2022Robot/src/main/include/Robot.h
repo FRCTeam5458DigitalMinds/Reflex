@@ -8,6 +8,8 @@
 
 #include <frc/TimedRobot.h>
 #include <frc/smartdashboard/SendableChooser.h>
+#include <frc2/command/ConditionalCommand.h>
+#include <frc2/command/Command.h>
 #include "RobotContainer.h"
 
 class Robot : public frc::TimedRobot {

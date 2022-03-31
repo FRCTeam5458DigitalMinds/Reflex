@@ -47,6 +47,7 @@
 #include <ratio>
 
 #include <frc2/command/ConditionalCommand.h>
+#include <frc2/command/CommandScheduler.h>
 #include <ctre/phoenix/motorcontrol/SupplyCurrentLimitConfiguration.h>
 
 
@@ -246,13 +247,13 @@ void Robot::AutonomousInit() {
   if (m_autonomousCommand != nullptr) {
     m_autonomousCommand->Schedule();
   }
-  
-  frc2::CommandScheduler::GetInstance().Run();
 
 }
 
 
 void Robot::AutonomousPeriodic() {
+  frc2::CommandScheduler::GetInstance().Run();
+
   //553.1248 cycles of the encoder per in. ---> Multiply by # of inches to find encoder units
 
   //Next steps: fixing drifting
@@ -388,6 +389,11 @@ void Robot::TeleopInit() {
   BackRightMotor.SetInverted(true);*/
 
   ShooterMotor2.SetInverted(true);
+
+  if (m_autonomousCommand != nullptr) {
+    m_autonomousCommand->Cancel();
+    m_autonomousCommand = nullptr;
+  }
 
 }
 
