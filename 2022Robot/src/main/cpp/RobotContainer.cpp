@@ -19,9 +19,7 @@
 
 #include "frc/smartdashboard/Smartdashboard.h"
 #include <frc/smartdashboard/SendableChooser.h>
-
 #include <frc2/command/ConditionalCommand.h>
-#include "RobotContainer.h"
 
 #include <frc/shuffleboard/Shuffleboard.h>
 #include <frc2/command/button/JoystickButton.h>
@@ -37,6 +35,14 @@ void RobotContainer::testRobotContainer() {
 
   // Put the chooser on the dashboard
   frc::Shuffleboard::GetTab("Autonomous").Add(m_chooser);
+
+}
+
+int main() {
+  RobotContainer test;
+  test.testRobotContainer();
+
+  return 0;
 }
 
 frc2::Command* RobotContainer::GetAutonomousCommand() {

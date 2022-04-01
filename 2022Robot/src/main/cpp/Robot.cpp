@@ -77,6 +77,8 @@ VictorSPX ConveyorMotor3 {7};
 
 TalonFX ShooterMotor1 {10};
 
+//frc::Solenoid IntakeBar{frc::PneumaticsModuleType::CTREPCM, 5};
+
 TalonFX ShooterMotor2 {9};
 // Closest to intake
 
@@ -92,8 +94,9 @@ double triggerThresholdTime = 5;
 double turnFact = 0.9;
 
 //Pneumatics
-// frc::Compressor pcmCompressor{0, frc::PneumaticsModuleType::CTREPCM};
-// frc::Solenoid IntakeBar{frc::PneumaticsModuleType::CTREPCM, 5};
+frc::Compressor pcmCompressor{0, frc::PneumaticsModuleType::CTREPCM};
+frc::Solenoid IntakeBar{frc::PneumaticsModuleType::CTREPCM, 5};
+
 
 //Gyro
 WPI_PigeonIMU gyro{6};
@@ -119,6 +122,8 @@ bool timeStampChecked = true;
 bool isShooterRunning = false;
 
 steady_clock::time_point clock_begin;
+
+RobotContainer m_container;
 
 //Set up motors to drive
 void LeftMotorDrive (double speed) {
@@ -147,21 +152,16 @@ void Climb (double speed) {
   RightClimbMotor.Set(ControlMode::PercentOutput, speed);
 }
 
-//Auto Selector
-frc::SendableChooser<frc2::Command*>m_chooser;
-
 //Initializing robot & variables
 void Robot::RobotInit() {
   //camera
   frc::CameraServer::GetInstance()->StartAutomaticCapture();
 
-  frc::SmartDashboard::PutData(&m_chooser);
-  // The chooser for the autonomous routines
+  // The chooser for the autonomous routines (put into RobotContainer)
   
   //frc::SmartDashboard::PutData("Auto Mode", &autoMode);
   //m_chooser.SetDefaultOption("mainAuto", autoMode::mainAuto);
   //frc::SmartDashboard::PutData("Play", &m_chooser);
-  
 
   FrontRightMotor.SetInverted(true);
   MiddleRightMotor.SetInverted(true);
@@ -169,8 +169,8 @@ void Robot::RobotInit() {
 
   ShooterMotor2.SetInverted(true);
 
-  //Drop intake down at the beginning of a match
-  // IntakeBar.Set(false);
+  //Drop Intake Bar at the beginning of match
+  IntakeBar.Set(true);
   
   FrontLeftMotor.SetSelectedSensorPosition(0);
   MiddleLeftMotor.SetSelectedSensorPosition(0);

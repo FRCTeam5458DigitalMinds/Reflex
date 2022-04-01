@@ -32,5 +32,6 @@ class Robot : public frc::TimedRobot {
   std::string m_autoSelected;
 
   frc2::Command* m_autonomousCommand = nullptr;
-  RobotContainer m_container;
+  //RobotContainer m_container;
+
 };
