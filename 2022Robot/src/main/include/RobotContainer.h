@@ -60,8 +60,8 @@ class RobotContainer;
 
 class RobotContainer {
  public:
-  void testRobotContainer();
 
+  void testRobotContainer();
   void FrontLeft();
   void LeftMotorDrive(double speed);
   void RightMotorDrive(double speed);
@@ -78,8 +78,5 @@ class RobotContainer {
   mainAuto m_MainAuto;
   Taxi m_TaxiAuto;
   ScoreOne m_ScoreOneAuto;
-
-  // The chooser for the autonomous routines
-  frc::SendableChooser<frc2::Command*> m_chooser;
 
 };

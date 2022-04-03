@@ -24,28 +24,4 @@
 #include <frc/shuffleboard/Shuffleboard.h>
 #include <frc2/command/button/JoystickButton.h>
 
-/*
-void RobotContainer::testRobotContainer() {
-  // Initialize all of your commands and subsystems here
 
-  // Add commands to the autonomous command chooser
-  m_chooser.SetDefaultOption("Main Auto", &m_MainAuto);
-  m_chooser.AddOption("Taxi Auto", &m_TaxiAuto);
-  m_chooser.AddOption("Shoot One Auto", &m_ScoreOneAuto);
-
-  // Put the chooser on the dashboard
-  frc::Shuffleboard::GetTab("Autonomous").Add(m_chooser);
-
-}
-
-int main() {
-  RobotContainer test;
-  test.testRobotContainer();
-
-  return 0;
-}
-
-frc2::Command* RobotContainer::GetAutonomousCommand() {
-  // Runs the chosen command in autonomous
-  return m_chooser.GetSelected();
-}*/

@@ -1,7 +1,6 @@
 // Copyright (c) FIRST and other WPILib contributors.
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
-// O_o hello is 
 
 //Include header files
 #include "Robot.h"
@@ -49,6 +48,8 @@
 #include <frc2/command/ConditionalCommand.h>
 #include <frc2/command/CommandScheduler.h>
 #include <ctre/phoenix/motorcontrol/SupplyCurrentLimitConfiguration.h>
+
+
 
 
 using namespace std::chrono;
@@ -112,20 +113,19 @@ double turnError;
 double turnPIDOutput;
 double distPIDOutput;
 
-
 int autoStep;
 bool timeStampChecked = true;
 bool isShooterRunning = false;
 
 steady_clock::time_point clock_begin;
 
-double LeftEncoderValue;
 
+RobotContainer m_container;
+RobotContainer testAuto;
 
-//Set up motors to drive
-void RobotContainer::FrontLeft() {
-  LeftEncoderValue = FrontLeftMotor.GetSelectedSensorPosition();
-}
+//The chooser for the autonomous routines
+frc::SendableChooser<frc2::Command*> m_chooser;
+
 void RobotContainer::LeftMotorDrive(double speed) {
   FrontLeftMotor.Set(ControlMode::PercentOutput, speed);
   MiddleLeftMotor.Set(ControlMode::PercentOutput, speed);
@@ -152,8 +152,17 @@ void RobotContainer::Climb(double speed) {
   RightClimbMotor.Set(ControlMode::PercentOutput, speed);
 }
 
-RobotContainer m_container;
+void RobotContainer::testRobotContainer() {
+  // Initialize all of your commands and subsystems here
 
+  // Add commands to the autonomous command chooser
+  /*m_chooser.SetDefaultOption("Main Auto", &m_MainAuto);
+  m_chooser.AddOption("Taxi Auto", &m_TaxiAuto);
+  m_chooser.AddOption("Shoot One Auto", &m_ScoreOneAuto);*/
+  frc::SmartDashboard::PutNumber("Auto: 1=Main, 2=ScoreOne, 3=Taxi", 1);
+  // Put the chooser on the dashboard
+
+}
 
 //Initializing robot & variables
 void Robot::RobotInit() {
@@ -162,8 +171,11 @@ void Robot::RobotInit() {
 
   // The chooser for the autonomous routines (put into RobotContainer)
   
+  testAuto.testRobotContainer();
+
   //frc::SmartDashboard::PutData("Auto Mode", &autoMode);
   //m_chooser.SetDefaultOption("mainAuto", autoMode::mainAuto);
+  //m_chooser.AddOption("something" , &m_something);
   //frc::SmartDashboard::PutData("Play", &m_chooser);
 
   FrontLeftMotor.SetInverted(true);
@@ -253,13 +265,17 @@ void Robot::AutonomousInit() {
 
 }
 
+frc2::Command* RobotContainer::GetAutonomousCommand() {
+  // Runs the chosen command in autonomous
+  return m_chooser.GetSelected();
+}
 
 void Robot::AutonomousPeriodic() {
   //frc2::CommandScheduler::GetInstance().Run();
 
   //553.1248 cycles of the encoder per in. ---> Multiply by # of inches to find encoder units
-
   RobotContainer Auto;
+
   //Next steps: fixing drifting
   LeftDriveEncValue = FrontLeftMotor.GetSelectedSensorPosition();
   RightDriveEncValue = FrontRightMotor.GetSelectedSensorPosition();
@@ -284,91 +300,114 @@ void Robot::AutonomousPeriodic() {
   } else if (distPIDOutput > 0.25) {
     distPIDOutput = 0.25;
   }
-
   
   //Main Auto (Normal Distance - 42500)
-  if (avgEncValue < 42500 && (autoStep == 1)) {
-      //std::cout << "Encoder Value: " << FrontLeftMotor.GetSelectedSensorPosition() << std::endl;
-      setpoint = 6637;
-      
-      Auto.LeftMotorDrive(0.25);
-      Auto.RightMotorDrive(0.25);
-      Auto.Shooter(0); 
-
-      Intake.Set(ControlMode::PercentOutput, -0.75);
-      autoStep = 1;
-  } else if (avgEncValue >= 42500 && autoStep <= 2) {
-      autoStep = 2;
+  if (frc::SmartDashboard::GetNumber("Auto", 1) == 1) {
+    if (avgEncValue < 42500 && (autoStep == 1)) {
+        //std::cout << "Encoder Value: " << FrontLeftMotor.GetSelectedSensorPosition() << std::endl;
+        setpoint = 6637;
         
-      Auto.LeftMotorDrive(-0.2);
-      Auto.RightMotorDrive(-0.2);
-      Auto.Conveyor(-0.1);
-      Auto.Shooter(0);
-      Auto.IntakeMotors(-0.5);
-  } else if (avgEncValue <= 500 && (autoStep >= 2) && seconds < 4.5) {
-      Auto.LeftMotorDrive(0);
-      Auto.RightMotorDrive(0);
-      Auto.Shooter(-0.35);
-      Auto.Conveyor(-0.5);
-      //figure out how many encoder rotations are equivalent to shooting two cargo and use that as qualification for next else if statement
-      Auto.IntakeMotors(0);
-      autoStep = 3;
-      //std::cout << "Shooter Encoder Value: " << ShooterMotor1.GetSelectedSensorPosition() << std::endl;
-  } //Part 2 of Main Auto (if we are on blue tarmac, turn 70 to left, meaning turn to -70 degrees)
-      else if (seconds > 4.5 && autoStep >= 3) {
-        //Turn 30 degrees
-        if (gyro.GetAngle() < 25 && autoStep == 3) {
-          Auto.RightMotorDrive(-0.25);
-          Auto.LeftMotorDrive(0.25);
-          std::cout << "Turn 45" << std::endl;
-        } else if (avgEncValue < 42500 && autoStep >= 3) {
-          Auto.LeftMotorDrive(0.25);
-          Auto.RightMotorDrive(0.25);
-          Auto.IntakeMotors(-0.75);
-          autoStep = 4;
-          std::cout << "Drive to cargo" << std::endl;
-        } else if (avgEncValue > 44000 && autoStep >= 3) {
-          if (gyro.GetAngle() < 65) {
-            Auto.LeftMotorDrive(0.35);
-            Auto.RightMotorDrive(-0.35);
-            std::cout << "Turn to 90" << std::endl;
-          } else if (gyro.GetAngle() >= 65 && avgEncValue > 45000 && avgEncValue < 165000) {
-            Auto.LeftMotorDrive(0.25);
-            Auto.RightMotorDrive(0.25);
-            std::cout << "Drive to terminal" << std::endl;
-            autoStep = 5;
-          }
-        } else if (autoStep >= 5 && LeftDriveEncValue > 165000) {
-          Auto.LeftMotorDrive(0);
-          Auto.RightMotorDrive(0);
-        }
-    } /*else {
+        Auto.LeftMotorDrive(0.25);
+        Auto.RightMotorDrive(0.25);
+        Auto.Shooter(0); 
+
+        Intake.Set(ControlMode::PercentOutput, -0.75);
+        autoStep = 1;
+    } else if (avgEncValue >= 42500 && autoStep <= 2) {
+        autoStep = 2;
+          
+        Auto.LeftMotorDrive(-0.2);
+        Auto.RightMotorDrive(-0.2);
+        Auto.Conveyor(-0.1);
+        Auto.Shooter(0);
+        Auto.IntakeMotors(-0.5);
+    } else if (avgEncValue <= 500 && (autoStep >= 2) && seconds < 4.5) {
         Auto.LeftMotorDrive(0);
         Auto.RightMotorDrive(0);
-        Intake.Set(ControlMode::PercentOutput, 0);
-        std::cout << "Stop all" << std::endl;
-    }*/
+        Auto.Shooter(-0.35);
+        Auto.Conveyor(-0.5);
+        //figure out how many encoder rotations are equivalent to shooting two cargo and use that as qualification for next else if statement
+        Auto.IntakeMotors(0);
+        autoStep = 3;
+        //std::cout << "Shooter Encoder Value: " << ShooterMotor1.GetSelectedSensorPosition() << std::endl;
+    } //Part 2 of Main Auto (if we are on blue tarmac, turn 70 to left, meaning turn to -70 degrees)
+        else if (seconds > 4.5 && autoStep >= 3) {
+          //Turn 30 degrees
+          if (gyro.GetAngle() < 25 && autoStep == 3) {
+            Auto.RightMotorDrive(-0.25);
+            Auto.LeftMotorDrive(0.25);
+            std::cout << "Turn 45" << std::endl;
+          } else if (avgEncValue < 42500 && autoStep >= 3) {
+            Auto.LeftMotorDrive(0.25);
+            Auto.RightMotorDrive(0.25);
+            Auto.IntakeMotors(-0.75);
+            autoStep = 4;
+            std::cout << "Drive to cargo" << std::endl;
+          } else if (avgEncValue > 44000 && autoStep >= 3) {
+            if (gyro.GetAngle() < 65) {
+              Auto.LeftMotorDrive(0.25);
+              Auto.RightMotorDrive(-0.25);
+              std::cout << "Turn to 90" << std::endl;
+            } else if (gyro.GetAngle() >= 65 && avgEncValue > 45000 && avgEncValue < 165000) {
+              Auto.LeftMotorDrive(0.25);
+              Auto.RightMotorDrive(0.25);
+              Auto.IntakeMotors(-0.75);
+              std::cout << "Drive to terminal" << std::endl;
+              autoStep = 5;
+            }
+          } else if (autoStep >= 5 && avgEncValue > 165000) {
+            Auto.LeftMotorDrive(-0.25);
+            Auto.RightMotorDrive(-0.25);
+            std::cout << "Drive back to hub" << std::endl;
+          } else if (autoStep >= 5 && avgEncValue < 3500 && avgEncValue > 500 && gyro.GetAngle() > 5) {
+            Auto.LeftMotorDrive(-0.25);
+            Auto.RightMotorDrive(0.25);
+            std::cout << "Turn toward hub" << std::endl;
+          } else if (autoStep >= 5 && avgEncValue > 500 && gyro.GetAngle() <= 5) {
+            Auto.LeftMotorDrive(-0.25);
+            Auto.RightMotorDrive(-0.25);
+            std::cout << "Keep driving back to hub" << std::endl;
+          } else {
+            Auto.LeftMotorDrive(0);
+            Auto.RightMotorDrive(0);
+            Auto.Shooter(-0.35);
+            std::cout << "Shoot two more cargo" << std::endl;
+          }
+      } 
+  }
   
-  /*Auto - Shoot One + Taxi
-  if (seconds < 13) {
-    std::cout << "Less than 13 s" << std::endl;
-    Shooter(-0.35);
-    Conveyor(-0.35);
-    LeftMotorDrive(0);
-    RightMotorDrive(0);
-  } else if (FrontLeftMotor.GetSelectedSensorPosition() < 70000) {
-    std::cout << "Else is running (past 13 sec)" << std::endl;
-    Shooter(0);
-    Conveyor(0);
-    LeftMotorDrive(0.4);
-    RightMotorDrive(0.4);
-  } else {
-    Shooter(0);
-    Conveyor(0);
-    LeftMotorDrive(0);
-    RightMotorDrive(0);
-  }*/
-
+  //Auto - Score One + Taxi
+  if (frc::SmartDashboard::GetNumber("Auto", 1) == 2) {
+    if (seconds < 13) {
+      std::cout << "Less than 13 s" << std::endl;
+      Auto.Shooter(-0.35);
+      Auto.Conveyor(-0.35);
+      Auto.LeftMotorDrive(0);
+      Auto.RightMotorDrive(0);
+    } else if (FrontLeftMotor.GetSelectedSensorPosition() < 70000) {
+      std::cout << "Else is running (past 13 sec)" << std::endl;
+      Auto.Shooter(0);
+      Auto.Conveyor(0);
+      Auto.LeftMotorDrive(0.4);
+      Auto.RightMotorDrive(0.4);
+    } else {
+      Auto.Shooter(0);
+      Auto.Conveyor(0);
+      Auto.LeftMotorDrive(0);
+      Auto.RightMotorDrive(0);
+    }
+  }
+  
+  if (frc::SmartDashboard::GetNumber("Auto", 1) == 3) {
+    if (FrontLeftMotor.GetSelectedSensorPosition() < 42131.516016) {
+      Auto.LeftMotorDrive(0.25);
+      Auto.RightMotorDrive(0.25);
+    } else {
+      Auto.LeftMotorDrive(0);
+      Auto.RightMotorDrive(0);
+    }
+  }
+  
     /*
     //Auto 2A - Shoot cargo then drive to the terminal and intake
     Shooter(0.35);
@@ -398,12 +437,7 @@ void Robot::AutonomousPeriodic() {
     } else {
       LeftMotorDrive(0);
       RightMotorDrive(0);
-    }
-  
-    //Auto #3 (All Tarmacs)
-    if(avgEncValue < 42131.516016) {
-      LeftMotorDrive(0.25);
-      RightMotorDrive(0.25);*/
+    }*/
 }
 
 void Robot::TeleopInit() {
@@ -465,11 +499,18 @@ double WheelX = Wheel.GetX();
     TeleOp.Shooter(-0.35);
     TeleOp.Conveyor(-0.5);
     TeleOp.IntakeMotors(0);
+  } else if(Xbox.GetPOVCount() == -90){
+    TeleOp.IntakeMotors(0.);
+    TeleOp.Shooter(-0.25);
+    TeleOp.Conveyor(-0.75);
+    std::cout << "Left Dpad was PRESSED" << std::endl;
   } else {
     TeleOp.IntakeMotors(0);
     TeleOp.Conveyor(0);
     TeleOp.Shooter(0);
+    
   }
+
   
 
   //Climb Code (Left Button brings climber up, Right button brings climber down)
