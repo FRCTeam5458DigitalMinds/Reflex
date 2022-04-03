@@ -50,8 +50,6 @@
 #include <ctre/phoenix/motorcontrol/SupplyCurrentLimitConfiguration.h>
 
 
-
-
 using namespace std::chrono;
 
 //Declarations
@@ -78,8 +76,6 @@ VictorSPX ConveyorMotor3 {3};
 TalonFX ShooterMotor1 {10};
 TalonFX ShooterMotor2 {9};
 
-//frc::Solenoid IntakeBar{frc::PneumaticsModuleType::CTREPCM, 5};
-
 //Climb Motors
 TalonFX LeftClimbMotor {7};
 TalonFX RightClimbMotor {8};
@@ -89,7 +85,6 @@ bool enable = true;
 double currentLimit = 60;
 double triggerThresholdCurrent = 5;
 double triggerThresholdTime = 5;
-double turnFact = 0.9;
 
 //Pneumatics
 frc::Compressor pcmCompressor{0, frc::PneumaticsModuleType::CTREPCM};
@@ -119,12 +114,11 @@ bool isShooterRunning = false;
 
 steady_clock::time_point clock_begin;
 
-
 RobotContainer m_container;
-RobotContainer testAuto;
+RobotContainer chooseAuto;
 
 //The chooser for the autonomous routines
-frc::SendableChooser<frc2::Command*> m_chooser;
+//frc::SendableChooser<frc2::Command*> m_chooser;
 
 void RobotContainer::LeftMotorDrive(double speed) {
   FrontLeftMotor.Set(ControlMode::PercentOutput, speed);
@@ -153,14 +147,12 @@ void RobotContainer::Climb(double speed) {
 }
 
 void RobotContainer::testRobotContainer() {
-  // Initialize all of your commands and subsystems here
 
   // Add commands to the autonomous command chooser
   /*m_chooser.SetDefaultOption("Main Auto", &m_MainAuto);
   m_chooser.AddOption("Taxi Auto", &m_TaxiAuto);
   m_chooser.AddOption("Shoot One Auto", &m_ScoreOneAuto);*/
   frc::SmartDashboard::PutNumber("Auto: 1=Main, 2=ScoreOne, 3=Taxi", 1);
-  // Put the chooser on the dashboard
 
 }
 
@@ -170,13 +162,7 @@ void Robot::RobotInit() {
   frc::CameraServer::StartAutomaticCapture();
 
   // The chooser for the autonomous routines (put into RobotContainer)
-  
-  testAuto.testRobotContainer();
-
-  //frc::SmartDashboard::PutData("Auto Mode", &autoMode);
-  //m_chooser.SetDefaultOption("mainAuto", autoMode::mainAuto);
-  //m_chooser.AddOption("something" , &m_something);
-  //frc::SmartDashboard::PutData("Play", &m_chooser);
+  chooseAuto.testRobotContainer();
 
   FrontLeftMotor.SetInverted(true);
   MiddleLeftMotor.SetInverted(true);
@@ -227,13 +213,8 @@ void Robot::RobotPeriodic() {
  * make sure to add them to the chooser code above as well.
  */
 
-
-
 void Robot::AutonomousInit() {
-  //autoMode = m_chooser.GetSelected();
-  // m_autoSelected = SmartDashboard::GetString("Auto Selector",
-  //     kAutoNameDefault);
-  fmt::print("Auto selected: {}\n", m_autoSelected);
+  //fmt::print("Auto selected: {}\n", m_autoSelected);
 
   clock_begin = steady_clock::now();
   
@@ -267,7 +248,7 @@ void Robot::AutonomousInit() {
 
 frc2::Command* RobotContainer::GetAutonomousCommand() {
   // Runs the chosen command in autonomous
-  return m_chooser.GetSelected();
+  //return m_chooser.GetSelected();
 }
 
 void Robot::AutonomousPeriodic() {
@@ -289,7 +270,7 @@ void Robot::AutonomousPeriodic() {
 
   std::cout << "Gyro Angle: " << gyro.GetAngle() << std::endl;
 
-  distError = (setpoint - avgEncValue);
+  /*distError = (setpoint - avgEncValue);
   turnError = (setpoint - gyro.GetAngle());
 
   turnPIDOutput = PVal * turnError;
@@ -299,9 +280,9 @@ void Robot::AutonomousPeriodic() {
     turnPIDOutput = 0.25;
   } else if (distPIDOutput > 0.25) {
     distPIDOutput = 0.25;
-  }
+  }*/
   
-  //Main Auto (Normal Distance - 42500)
+  //Main Auto - Grab 2 cargo, Score those, Grab 2 more cargo, Score those
   if (frc::SmartDashboard::GetNumber("Auto", 1) == 1) {
     if (avgEncValue < 42500 && (autoStep == 1)) {
         //std::cout << "Encoder Value: " << FrontLeftMotor.GetSelectedSensorPosition() << std::endl;
@@ -397,7 +378,7 @@ void Robot::AutonomousPeriodic() {
       Auto.RightMotorDrive(0);
     }
   }
-  
+  //Auto - Taxi
   if (frc::SmartDashboard::GetNumber("Auto", 1) == 3) {
     if (FrontLeftMotor.GetSelectedSensorPosition() < 42131.516016) {
       Auto.LeftMotorDrive(0.25);
@@ -481,7 +462,6 @@ double WheelX = Wheel.GetX();
     TeleOp.RightMotorDrive(0);
   } 
 
-
   //Intake Code (button X to intake & run conveyor, button A to spit) & Shooter+Conveyor Code (button Y)
   if(Xbox.GetRawButton(3)) {
     TeleOp.IntakeMotors(-0.95);
@@ -499,8 +479,8 @@ double WheelX = Wheel.GetX();
     TeleOp.Shooter(-0.35);
     TeleOp.Conveyor(-0.5);
     TeleOp.IntakeMotors(0);
-  } else if(Xbox.GetPOVCount() == -90){
-    TeleOp.IntakeMotors(0.);
+  } else if(Xbox.GetPOV() == 270){
+    TeleOp.IntakeMotors(-0.95);
     TeleOp.Shooter(-0.25);
     TeleOp.Conveyor(-0.75);
     std::cout << "Left Dpad was PRESSED" << std::endl;
@@ -508,28 +488,24 @@ double WheelX = Wheel.GetX();
     TeleOp.IntakeMotors(0);
     TeleOp.Conveyor(0);
     TeleOp.Shooter(0);
-    
   }
-
-  
 
   //Climb Code (Left Button brings climber up, Right button brings climber down)
   if(Xbox.GetRawButton(5)) {
-    TeleOp.Climb (0.38);
+    TeleOp.Climb(0.38);
   } else if(Xbox.GetRawButton(6)) {
-    TeleOp.Climb (-0.38);
+    TeleOp.Climb(-0.38);
   } else if (Xbox.GetRawButtonPressed(8)) {
     LeftClimbMotor.SetNeutralMode(Brake);
     RightClimbMotor.SetNeutralMode(Brake);
   } else {
-    TeleOp.Climb (0);
+    TeleOp.Climb(0);
   }
 
   //Brings intake bar down
   if(Xbox.GetRawButtonPressed(7)) {
-    // IntakeBar.Set(!IntakeBar.Get());
+    IntakeBar.Set(!IntakeBar.Get());
   }
-
 }
 
 void Robot::DisabledInit() {}
