@@ -10,6 +10,7 @@
 #include <frc/smartdashboard/SendableChooser.h>
 #include <frc2/command/ConditionalCommand.h>
 #include <frc2/command/Command.h>
+#include <frc/Joystick.h>
 #include "RobotContainer.h"
 
 class Robot : public frc::TimedRobot {
@@ -26,12 +27,11 @@ class Robot : public frc::TimedRobot {
   void TestPeriodic() override;
 
  private:
-  frc::SendableChooser<std::string> m_chooser;
   const std::string kAutoNameDefault = "Default";
   const std::string kAutoNameCustom = "My Auto";
   std::string m_autoSelected;
 
-  frc2::Command* m_autonomousCommand = nullptr;
+  //frc2::Command* m_autonomousCommand = nullptr;
   //RobotContainer m_container;
 
 };

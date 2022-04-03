@@ -53,34 +53,31 @@
 
 using namespace std::chrono;
 
-
 //Declarations
 
 //Joysticks
-frc::Joystick JoyStick1(0), Wheel(3), Xbox(1);
+frc::Joystick JoyStick1(4), Wheel(3), Xbox(1);
 
 //Drive Motors
-TalonFX FrontRightMotor {15};
-TalonFX MiddleRightMotor {14};
-TalonFX BackRightMotor {13};
+TalonFX FrontLeftMotor {15};
+TalonFX MiddleLeftMotor {14};
+TalonFX BackLeftMotor {13};
 
-TalonFX FrontLeftMotor {1};
-TalonFX MiddleLeftMotor {2};
-TalonFX BackLeftMotor {3};
+TalonFX FrontRightMotor {3};
+TalonFX MiddleRightMotor {2};
+TalonFX BackRightMotor {1};
 
 //Intake Motors
 VictorSPX Intake {5};
 
 //Shooter Motors
 VictorSPX ConveyorMotor1 {4};
-VictorSPX ConveyorMotor3 {7};
+VictorSPX ConveyorMotor3 {3};
 
 TalonFX ShooterMotor1 {10};
+TalonFX ShooterMotor2 {9};
 
 //frc::Solenoid IntakeBar{frc::PneumaticsModuleType::CTREPCM, 5};
-
-TalonFX ShooterMotor2 {9};
-// Closest to intake
 
 //Climb Motors
 TalonFX LeftClimbMotor {7};
@@ -96,7 +93,6 @@ double turnFact = 0.9;
 //Pneumatics
 frc::Compressor pcmCompressor{0, frc::PneumaticsModuleType::CTREPCM};
 frc::Solenoid IntakeBar{frc::PneumaticsModuleType::CTREPCM, 5};
-
 
 //Gyro
 WPI_PigeonIMU gyro{6};
@@ -116,46 +112,53 @@ double turnError;
 double turnPIDOutput;
 double distPIDOutput;
 
-int autoStep = 1;
 
+int autoStep;
 bool timeStampChecked = true;
 bool isShooterRunning = false;
 
 steady_clock::time_point clock_begin;
 
-RobotContainer m_container;
+double LeftEncoderValue;
+
 
 //Set up motors to drive
-void LeftMotorDrive (double speed) {
+void RobotContainer::FrontLeft() {
+  LeftEncoderValue = FrontLeftMotor.GetSelectedSensorPosition();
+}
+void RobotContainer::LeftMotorDrive(double speed) {
   FrontLeftMotor.Set(ControlMode::PercentOutput, speed);
   MiddleLeftMotor.Set(ControlMode::PercentOutput, speed);
   BackLeftMotor.Set(ControlMode::PercentOutput, speed);
 }
-void RightMotorDrive (double speed) { 
+void RobotContainer::RightMotorDrive(double speed) { 
   FrontRightMotor.Set(ControlMode::PercentOutput, speed);
   MiddleRightMotor.Set(ControlMode::PercentOutput, speed);
   BackRightMotor.Set(ControlMode::PercentOutput, speed);
 }
-void IntakeMotors (double speed) {
+void RobotContainer::IntakeMotors(double speed) {
   Intake.Set(ControlMode::PercentOutput, speed);
 }
-void Conveyor (double speed) {
+void RobotContainer::Conveyor(double speed) {
   ConveyorMotor1.Set(ControlMode::PercentOutput, speed);
 }
-void Shooter (double speed) {
+void RobotContainer::Shooter(double speed) {
   ShooterMotor1.Set(ControlMode::PercentOutput, speed);
   ShooterMotor2.Set(ControlMode::PercentOutput, speed);
   ConveyorMotor3.Set(ControlMode::PercentOutput, speed);
 }
-void Climb (double speed) {
+void RobotContainer::Climb(double speed) {
   LeftClimbMotor.Set(ControlMode::PercentOutput, speed);
   RightClimbMotor.Set(ControlMode::PercentOutput, speed);
 }
 
+RobotContainer m_container;
+
+
 //Initializing robot & variables
 void Robot::RobotInit() {
   //camera
-  frc::CameraServer::GetInstance()->StartAutomaticCapture();
+  frc::CameraServer::StartAutomaticCapture();
 
   // The chooser for the autonomous routines (put into RobotContainer)
   
@@ -163,9 +166,9 @@ void Robot::RobotInit() {
   //m_chooser.SetDefaultOption("mainAuto", autoMode::mainAuto);
   //frc::SmartDashboard::PutData("Play", &m_chooser);
 
-  FrontRightMotor.SetInverted(true);
-  MiddleRightMotor.SetInverted(true);
-  BackRightMotor.SetInverted(true);
+  FrontLeftMotor.SetInverted(true);
+  MiddleLeftMotor.SetInverted(true);
+  BackLeftMotor.SetInverted(true);
 
   ShooterMotor2.SetInverted(true);
 
@@ -197,8 +200,8 @@ void Robot::RobotInit() {
  * <p> This runs after the mode specific periodic functions, but before
  * LiveWindow and SmartDashboard integrated updating.
  */
-/*void Robot::RobotPeriodic() {
-}*/
+void Robot::RobotPeriodic() {
+}
 
 /**
  * This autonomous (alon)g with the chooser code above) shows how to select
@@ -236,37 +239,41 @@ void Robot::AutonomousInit() {
   LeftClimbMotor.SetSelectedSensorPosition(0);
   RightClimbMotor.SetSelectedSensorPosition(0);
 
-  frc::CameraServer::GetInstance()->StartAutomaticCapture();
+  frc::CameraServer::StartAutomaticCapture();
 
   autoStep = 1;
 
   gyro.Reset();
 
-  m_autonomousCommand = m_container.GetAutonomousCommand();
+  /*m_autonomousCommand = m_container.GetAutonomousCommand();
   
   if (m_autonomousCommand != nullptr) {
     m_autonomousCommand->Schedule();
-  }
+  }*/
 
 }
 
 
 void Robot::AutonomousPeriodic() {
-  frc2::CommandScheduler::GetInstance().Run();
+  //frc2::CommandScheduler::GetInstance().Run();
 
   //553.1248 cycles of the encoder per in. ---> Multiply by # of inches to find encoder units
 
+  RobotContainer Auto;
   //Next steps: fixing drifting
   LeftDriveEncValue = FrontLeftMotor.GetSelectedSensorPosition();
   RightDriveEncValue = FrontRightMotor.GetSelectedSensorPosition();
+
+  double avgEncValue = (FrontLeftMotor.GetSelectedSensorPosition() + FrontRightMotor.GetSelectedSensorPosition())/2;
 
   steady_clock::time_point clock_end = steady_clock::now();
   steady_clock::duration time_span = clock_end - clock_begin;
 
   double seconds = double(time_span.count()) * steady_clock::period::num / steady_clock::period::den;
 
-  std::cout << "seconds: " << seconds << std::endl;
-  /*distError = (setpoint - avgEncValue);
+  std::cout << "Gyro Angle: " << gyro.GetAngle() << std::endl;
+
+  distError = (setpoint - avgEncValue);
   turnError = (setpoint - gyro.GetAngle());
 
   turnPIDOutput = PVal * turnError;
@@ -276,55 +283,71 @@ void Robot::AutonomousPeriodic() {
     turnPIDOutput = 0.25;
   } else if (distPIDOutput > 0.25) {
     distPIDOutput = 0.25;
-  }*/
+  }
 
-  /*
+  
   //Main Auto (Normal Distance - 42500)
-  if (LeftDriveEncValue < 42500 && RightDriveEncValue < 42500 && (autoStep == 1)) {
+  if (avgEncValue < 42500 && (autoStep == 1)) {
       //std::cout << "Encoder Value: " << FrontLeftMotor.GetSelectedSensorPosition() << std::endl;
       setpoint = 6637;
       
-      LeftMotorDrive(0.2);
-      RightMotorDrive(0.2);
-      Shooter(0); 
+      Auto.LeftMotorDrive(0.25);
+      Auto.RightMotorDrive(0.25);
+      Auto.Shooter(0); 
 
       Intake.Set(ControlMode::PercentOutput, -0.75);
       autoStep = 1;
-  } else if (LeftDriveEncValue > 42500 && RightDriveEncValue > 42500) {
+  } else if (avgEncValue >= 42500 && autoStep <= 2) {
       autoStep = 2;
         
-      LeftMotorDrive(-0.2);
-      RightMotorDrive(-0.2);
-      Conveyor(-0.1);
-      Shooter(0);
-      IntakeMotors(-0.5);
-  } else if (LeftDriveEncValue <= -1000 && RightDriveEncValue <= -1000 && (autoStep >= 2)) {
-      LeftMotorDrive(0);
-      RightMotorDrive(0);
-      Shooter(-0.35);
-      Conveyor(-0.5);
+      Auto.LeftMotorDrive(-0.2);
+      Auto.RightMotorDrive(-0.2);
+      Auto.Conveyor(-0.1);
+      Auto.Shooter(0);
+      Auto.IntakeMotors(-0.5);
+  } else if (avgEncValue <= 500 && (autoStep >= 2) && seconds < 4.5) {
+      Auto.LeftMotorDrive(0);
+      Auto.RightMotorDrive(0);
+      Auto.Shooter(-0.35);
+      Auto.Conveyor(-0.5);
       //figure out how many encoder rotations are equivalent to shooting two cargo and use that as qualification for next else if statement
-      IntakeMotors(0);
+      Auto.IntakeMotors(0);
       autoStep = 3;
       //std::cout << "Shooter Encoder Value: " << ShooterMotor1.GetSelectedSensorPosition() << std::endl;
   } //Part 2 of Main Auto (if we are on blue tarmac, turn 70 to left, meaning turn to -70 degrees)
-   if (ShooterMotor1.GetSelectedSensorPosition() < -3000 && ShooterMotor2.GetSelectedSensorPosition() < -3000) {
-        //Turn 70 degrees
-        if (gyro.GetAngle() < 70) {
-          RightMotorDrive(0.35);
-          LeftMotorDrive(-0.35);
+      else if (seconds > 4.5 && autoStep >= 3) {
+        //Turn 30 degrees
+        if (gyro.GetAngle() < 25 && autoStep == 3) {
+          Auto.RightMotorDrive(-0.25);
+          Auto.LeftMotorDrive(0.25);
+          std::cout << "Turn 45" << std::endl;
+        } else if (avgEncValue < 42500 && autoStep >= 3) {
+          Auto.LeftMotorDrive(0.25);
+          Auto.RightMotorDrive(0.25);
+          Auto.IntakeMotors(-0.75);
           autoStep = 4;
-        } else if (LeftDriveEncValue < 165000 && RightDriveEncValue < 165000 && autoStep == 4) {
-          LeftMotorDrive(0.25);
-          RightMotorDrive(0.25);
-          Intake.Set(ControlMode::PercentOutput, -0.75);
-        } else {
-          LeftMotorDrive(0);
-          RightMotorDrive(0);
-          Intake.Set(ControlMode::PercentOutput, 0);
+          std::cout << "Drive to cargo" << std::endl;
+        } else if (avgEncValue > 44000 && autoStep >= 3) {
+          if (gyro.GetAngle() < 65) {
+            Auto.LeftMotorDrive(0.35);
+            Auto.RightMotorDrive(-0.35);
+            std::cout << "Turn to 90" << std::endl;
+          } else if (gyro.GetAngle() >= 65 && avgEncValue > 45000 && avgEncValue < 165000) {
+            Auto.LeftMotorDrive(0.25);
+            Auto.RightMotorDrive(0.25);
+            std::cout << "Drive to terminal" << std::endl;
+            autoStep = 5;
+          }
+        } else if (autoStep >= 5 && LeftDriveEncValue > 165000) {
+          Auto.LeftMotorDrive(0);
+          Auto.RightMotorDrive(0);
         }
-      }*/
-
+    } /*else {
+        Auto.LeftMotorDrive(0);
+        Auto.RightMotorDrive(0);
+        Intake.Set(ControlMode::PercentOutput, 0);
+        std::cout << "Stop all" << std::endl;
+    }*/
   
   /*Auto - Shoot One + Taxi
   if (seconds < 13) {
@@ -390,73 +413,75 @@ void Robot::TeleopInit() {
 
   ShooterMotor2.SetInverted(true);
 
-  if (m_autonomousCommand != nullptr) {
+  /*if (m_autonomousCommand != nullptr) {
     m_autonomousCommand->Cancel();
     m_autonomousCommand = nullptr;
-  }
+  }*/
 
 }
 
 void Robot::TeleopPeriodic() {
 
+RobotContainer TeleOp;
+
 double JoyY = -JoyStick1.GetY();
 double WheelX = Wheel.GetX();
 
   if ((WheelX > 0.05 || WheelX < -0.05) && (JoyY > 0.1 || JoyY < -0.1)) {
-    LeftMotorDrive((JoyY*0.2) + (0.5*WheelX));
-    RightMotorDrive((JoyY*0.2) - (0.5*WheelX));
+    TeleOp.LeftMotorDrive((JoyY*0.2) + (0.1*WheelX));
+    TeleOp.RightMotorDrive((JoyY*0.2) - (0.1*WheelX));
   } else if (JoyY > 0.1 || JoyY < -0.1) {
-    LeftMotorDrive((JoyY * 0.8));
-    RightMotorDrive((JoyY * 0.8));
+    TeleOp.LeftMotorDrive((JoyY * 0.5));
+    TeleOp.RightMotorDrive((JoyY * 0.5));
   } // Point turning
     else if (Wheel.GetRawButton(5)) {
     if (WheelX > 0) {
-      RightMotorDrive((WheelX * WheelX));
-      LeftMotorDrive(-(WheelX * WheelX));
+      TeleOp.RightMotorDrive((WheelX * WheelX));
+      TeleOp.LeftMotorDrive(-(WheelX * WheelX));
     } else if (WheelX < 0) {
-      RightMotorDrive(-(WheelX * WheelX));
-      LeftMotorDrive((WheelX * WheelX));
+      TeleOp.RightMotorDrive(-(WheelX * WheelX));
+      TeleOp.LeftMotorDrive((WheelX * WheelX));
     }
   } else {
-    LeftMotorDrive(0);
-    RightMotorDrive(0);
+    TeleOp.LeftMotorDrive(0);
+    TeleOp.RightMotorDrive(0);
   } 
 
 
   //Intake Code (button X to intake & run conveyor, button A to spit) & Shooter+Conveyor Code (button Y)
   if(Xbox.GetRawButton(3)) {
-    IntakeMotors(-0.95);
-    Conveyor(-0.1);
-    Shooter(0);
+    TeleOp.IntakeMotors(-0.95);
+    TeleOp.Conveyor(-0.1);
+    TeleOp.Shooter(0);
   } else if (Xbox.GetRawButton(1)) {
-    IntakeMotors(0.95);
-    Conveyor(0.5);
-    Shooter(0);
+    TeleOp.IntakeMotors(0.95);
+    TeleOp.Conveyor(0.5);
+    TeleOp.Shooter(0);
   } else if (Xbox.GetRawButton(2)) {
-    Conveyor(-0.65);
-    IntakeMotors(0);
-    Shooter(0);
+    TeleOp.Conveyor(-0.65);
+    TeleOp.IntakeMotors(0);
+    TeleOp.Shooter(0);
   } else if(Xbox.GetRawButton(4)) {
-    Shooter(-0.35);
-    Conveyor(-0.5);
-    IntakeMotors(0);
+    TeleOp.Shooter(-0.35);
+    TeleOp.Conveyor(-0.5);
+    TeleOp.IntakeMotors(0);
   } else {
-    IntakeMotors(0);
-    Conveyor(0);
-    Shooter(0);
+    TeleOp.IntakeMotors(0);
+    TeleOp.Conveyor(0);
+    TeleOp.Shooter(0);
   }
   
 
   //Climb Code (Left Button brings climber up, Right button brings climber down)
   if(Xbox.GetRawButton(5)) {
-    Climb (0.38);
+    TeleOp.Climb (0.38);
   } else if(Xbox.GetRawButton(6)) {
-    Climb (-0.38);
+    TeleOp.Climb (-0.38);
   } else if (Xbox.GetRawButtonPressed(8)) {
     LeftClimbMotor.SetNeutralMode(Brake);
     RightClimbMotor.SetNeutralMode(Brake);
   } else {
-    Climb (0);
+    TeleOp.Climb (0);
   }
 
   //Brings intake bar down
@@ -535,8 +560,3 @@ int main() {
   return frc::StartRobot<Robot>();
 }
 #endif
-
-// arc turning possible code
- // double Joystick1 = -JoyStick1.wpilib_joystick()->GetRawAxis(1);
- // double wheel = -Wheel_.wpilib_joystick()->GetRawAxis(0);
- // bool quickturn = quickturn_->is_pressed();

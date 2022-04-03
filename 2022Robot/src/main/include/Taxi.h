@@ -8,6 +8,7 @@
  * Our main auto command that shoots one cargo and drives forward to taxi.
  * 
  */
+
 class Taxi;
 
 class Taxi
