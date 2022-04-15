@@ -7,10 +7,11 @@
 #include <frc2/command/CommandHelper.h>
 #include <frc2/command/SequentialCommandGroup.h>
 
-/**
+/*
  * Our main auto command that drives forward, grabs a second cargo, and then drives
  * backward and shoots two cargo.
  */
+
 class mainAuto;
 
 class mainAuto 
