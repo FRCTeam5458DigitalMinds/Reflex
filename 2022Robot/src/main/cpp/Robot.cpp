@@ -88,6 +88,7 @@ double triggerThresholdTime = .1;
 //Pneumatics
 frc::Compressor pcmCompressor{0, frc::PneumaticsModuleType::CTREPCM};
 frc::Solenoid IntakePistons{frc::PneumaticsModuleType::CTREPCM, 5};
+frc::Solenoid ClimbPiston{frc::PneumaticsModuleType::CTREPCM, 3}; 
 
 //Gyro + Accelerometer
 WPI_PigeonIMU gyro{6};
@@ -218,8 +219,6 @@ void Robot::RobotInit() {
  * <p> This runs after the mode specific periodic functions, but before
  * LiveWindow and SmartDashboard integrated updating.
  */
-void Robot::RobotPeriodic() {
-}
 
 /**
  * This autonomous (alon)g with the chooser code above) shows how to select
@@ -383,11 +382,16 @@ void Robot::AutonomousPeriodic() {
               Auto.Shooter(0.8);
             }
           }
-      } 
+      }
+       
   }
 
+//Main Auto - Shot 2 pre-loaded cargo, Score those, Grab 2 more cargo, Score those
+
+
+
   //Auto - Two ball (lower hub)
-  if (frc::SmartDashboard::GetNumber("Auto", 3) == 2) {
+  if (frc::SmartDashboard::GetNumber("Auto", 3) == 5) {
     if (avgEncValue < 42500 && (autoStep == 1)) {
           //std::cout << "Encoder Value: " << FrontLeftMotor.GetSelectedSensorPosition() << std::endl;
           setpoint = 6637;
@@ -419,13 +423,13 @@ void Robot::AutonomousPeriodic() {
 
   //Auto - Two Ball (upper hub)
   if (frc::SmartDashboard::GetNumber("Auto", 3) == 3) {
-    if (avgEncValue < 21800 && (autoStep == 1) && seconds < 4) {
+    if (avgEncValue < 21800 && (autoStep == 1) && seconds < 5) {
           //std::cout << "Encoder Value: " << FrontLeftMotor.GetSelectedSensorPosition() << std::endl;
           setpoint = 6637;
           
           Auto.LeftMotorDrive(0.2);
           Auto.RightMotorDrive(0.2);
-          Auto.Shooter(0.65); 
+          Auto.Shooter(0.75); 
           Auto.IntakeMotors(-0.5);
           Auto.Conveyor(0);
 
@@ -444,9 +448,9 @@ void Robot::AutonomousPeriodic() {
           Auto.Conveyor(0);
           IntakePistons.Set(false);
       }
-
+    }
   //Auto - Score One + Taxi
-  if (frc::SmartDashboard::GetNumber("Auto", 3) == 4) {
+  if (frc::SmartDashboard::GetNumber("Auto", 3) == 5) {
     if (seconds < 13) {
       std::cout << "Less than 13 s" << std::endl;
       Auto.Shooter(0.35);
@@ -467,8 +471,10 @@ void Robot::AutonomousPeriodic() {
     }
   }
 
+
+
   //5 Ball Auto
-  if (frc::SmartDashboard::GetNumber("Auto", 3) == 5) {
+  if(frc::SmartDashboard::GetNumber("Auto", 3) == 6) {
     if (avgEncValue < 22000 && (autoStep == 1)) {
         //std::cout << "Encoder Value: " << FrontLeftMotor.GetSelectedSensorPosition() << std::endl;
         
@@ -539,14 +545,13 @@ void Robot::AutonomousPeriodic() {
     }
   }
 }
-}
-
 void Robot::TeleopInit() {
   gyro.Reset();
+  
   gyroResetted = false;
-  /*FrontRightMotor.SetInverted(true);
+  FrontRightMotor.SetInverted(true);
   MiddleRightMotor.SetInverted(true);
-  BackRightMotor.SetInverted(true);*/
+  BackRightMotor.SetInverted(true);
 
   ShooterMotor2.SetInverted(true);
   LeftClimbMotor.SetSelectedSensorPosition(0);
@@ -563,8 +568,8 @@ void Robot::TeleopPeriodic() {
 
   RobotContainer TeleOp;
 
-  double JoyY = -JoyStick1.GetY();
-  double WheelX = Wheel.GetX();
+  double JoyY = Wheel.GetX();
+  double WheelX = -JoyStick1.GetY();
 
   frc::SmartDashboard::PutNumber("EncVal: ", LeftClimbMotor.GetSelectedSensorPosition());
 
@@ -573,8 +578,8 @@ void Robot::TeleopPeriodic() {
     TeleOp.LeftMotorDrive((JoyY*0.4) + (0.3*WheelX));
     TeleOp.RightMotorDrive((JoyY*0.4) - (0.3*WheelX));
   } else if (JoyY > 0.1 || JoyY < -0.1) {
-    TeleOp.LeftMotorDrive((JoyY * 0.45));
-    TeleOp.RightMotorDrive((JoyY * 0.45));
+    TeleOp.LeftMotorDrive((JoyY * 0.35));
+    TeleOp.RightMotorDrive((JoyY * 0.35));
   } else if (Xbox.GetRawButton(3)) {
     if (!gyroResetted) {
       gyro.Reset();
@@ -587,7 +592,7 @@ void Robot::TeleopPeriodic() {
       TeleOp.RightMotorDrive(0);
     }
   } // Point turning
-    else if (Wheel.GetRawButton(5)) {
+  else if (JoyStick1.GetRawButton(1)) {
     if (WheelX > 0) {
       TeleOp.RightMotorDrive(-(WheelX * WheelX));
       TeleOp.LeftMotorDrive((WheelX * WheelX));
@@ -606,16 +611,16 @@ void Robot::TeleopPeriodic() {
     TeleOp.IntakeMotors(-0.45);
     TeleOp.Conveyor(-0.2);
     TeleOp.Shooter(0);
-  } else if (Xbox.GetRawButton(4)) {
+  } else if (Xbox.GetRawButton(1)) {
     IntakePistons.Set(true);
     TeleOp.IntakeMotors(0.45);
     TeleOp.Conveyor(0.5);
     TeleOp.Shooter(0);
-  } else if (Xbox.GetRawButton(2)) {
+  } else if (Xbox.GetRawButton(8) && !Xbox.GetRawButton(7)) {
     TeleOp.Conveyor(0.25);
     TeleOp.IntakeMotors(0);
-    TeleOp.Shooter(0);
-  } else if(Xbox.GetRawButton(1)) {
+    TeleOp.Shooter(0.75);
+  } else if(Xbox.GetRawButton(2)) {
     TeleOp.Shooter(0.35);
     TeleOp.Conveyor(-0.5);
     TeleOp.IntakeMotors(0);
@@ -626,9 +631,9 @@ void Robot::TeleopPeriodic() {
       shooterTimer->Start();
     }
     
-    if (shooterTimer->Get() < (units::time::second_t)2) {
-      TeleOp.Shooter(0.75);
-      TeleOp.Conveyor(0);
+    if (shooterTimer->Get() < (units::time::second_t)0.5) {
+      TeleOp.Shooter(0.95);
+      TeleOp.Conveyor(0.1);
       TeleOp.IntakeMotors(0);
     } /*else if (shooterTimer->Get() > (units::time::second_t)2.45 && shooterTimer->Get() < (units::time::second_t)5) {
       TeleOp.Conveyor(0);
@@ -653,46 +658,55 @@ void Robot::TeleopPeriodic() {
   }
 
   //Climb Code (Left Button brings climber up, Right button brings climber down)
-  if(Xbox.GetRawButton(5)) {
+ClimbPiston.Set(false);
+if (Xbox.GetRawButton(7) && Xbox.GetRawButton(8)) {
+    ClimbPiston.Set(true); 
+  }
+if (Xbox.GetRawButton(5)) {
     TeleOp.Climb(0.48);
-  } else if(Xbox.GetRawButton(6)) {
+}else if(Xbox.GetRawButton(6)) {
     TeleOp.Climb(-0.35);
     //std::cout << "Accel Y: " << accelerometer.GetY() << std::endl;
     //std::cout << "Accel Z: " << accelerometer.GetZ() << std::endl;
-  } else if(Xbox.GetRawButton(7)) {
-    if (LeftClimbMotor.GetSelectedSensorPosition() < 88806) {
+}else if(Xbox.GetRawButton(7) && !Xbox.GetRawButton(8)) {
+  if (LeftClimbMotor.GetSelectedSensorPosition() < 88806) {
       TeleOp.Climb(0.48);
     } else if (LeftClimbMotor.GetSelectedSensorPosition() >= 88806) {
       TeleOp.Climb(0);
     }
-  } else if (Xbox.GetRawButton(8)) {
-    if (LeftClimbMotor.GetSelectedSensorPosition() < 158235) {
+}else if (Xbox.GetRawButton(9)) {
+  if (LeftClimbMotor.GetSelectedSensorPosition() < 158235) {
       TeleOp.Climb(0.48);
     } else {
       TeleOp.Climb(0);
     }
-  } else if (Xbox.GetRawButtonPressed(8)) {
+  } /*else if (Xbox.GetRawButtonPressed(8)) {
     //Button closest to xbox controller
     LeftClimbMotor.SetNeutralMode(Brake);
-    RightClimbMotor.SetNeutralMode(Brake);
-  } else {
+    RightClimbMotor.SetNeutralMode(Brake); 
+  }*/
+   else {
     TeleOp.Climb(0);
   }
-
-  /*//Brings intake bar down (Owen + Alex's work)
-  if(Xbox.GetRawButton(2)) {
-    IntakePistons.Set(true);
-    TeleOp.IntakeMotors(-0.5);
-  } else {
-    TeleOp.IntakeMotors(0);
-    IntakePistons.Set(false);
+  /*if (Xbox.GetRawButton(5)) {
+    TeleOp.Climb(0.48); 
+  } else if (Xbox.GetRawButton(6)) { 
+    TeleOp.Climb(-0.35);
+  }   if (LeftClimbMotor.GetSelectedSensorPosition() < 158235){             //(gyro.GetAngle() < 35){ 
+        TeleOp.Climb(-0.35); 
+  } 
+  if (LeftClimbMotor.GetSelectedSensorPosition() < 158235) {
+    TeleOp.Climb(0.48);
+  }   else if (LeftClimbMotor.GetSelectedSensorPosition() < 158235){
+        TeleOp.Climb(-0.35); 
+  } else if (LeftClimbMotor.GetSelectedSensorPosition() < 158235) {
+      ClimbPiston.Set(true);
   }*/
-   
 }
 
-void Robot::DisabledInit() {}
+//void Robot::DisabledInit() {}
 
-void Robot::DisabledPeriodic() {}
+//void Robot::DisabledPeriodic() {}
 
 void Robot::TestInit() {
   FrontLeftMotor.SetSelectedSensorPosition(0);
@@ -707,7 +721,7 @@ void Robot::TestInit() {
   gyro.Calibrate();
 }
 
-void Robot::TestPeriodic() {
+//void Robot::TestPeriodic() {
 
 
   /*//Determine tolerance of gyro
@@ -742,7 +756,7 @@ void Robot::TestPeriodic() {
     Intake (0);
   }*/
   
-}
+//}
 
 
 #ifndef RUNNING_FRC_TESTS
